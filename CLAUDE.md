@@ -27,58 +27,26 @@ Skills, agents, and all session materials are auto-discovered from the plugin di
 
 ## Repository Structure
 
-```
-autoboard/
-├── .claude-plugin/
-│   └── plugin.json             # Plugin manifest
-│
-├── bin/
-│   └── spawn-session.sh        # Thin wrapper around claude -p for spawning session agents
-│
-├── config/
-│   └── default-session-permissions.json  # Default allow/deny rules for session agents
-│
-├── standards/                  # Quality standards framework
-│   ├── README.md               # How the standards system works
-│   └── dimensions/             # One file per quality dimension
-│       ├── security.md
-│       ├── error-handling.md
-│       ├── type-safety.md
-│       ├── dry-code-reuse.md
-│       ├── test-quality.md
-│       ├── config-management.md
-│       ├── frontend-quality.md
-│       ├── data-modeling.md
-│       ├── api-design.md
-│       ├── observability.md
-│       ├── performance.md
-│       └── code-organization.md
-│
-├── skills/                     # Skills (invocable via Skill tool)
-│   ├── brainstorm/SKILL.md     # /autoboard:brainstorm — interactive design session
-│   ├── standards/SKILL.md      # /autoboard:standards — configure quality dimensions
-│   ├── task-manifest/SKILL.md  # /autoboard:task-manifest — generate manifest from design doc
-│   ├── run/SKILL.md            # /autoboard:run — orchestrator (THE core file)
-│   ├── session-workflow/SKILL.md  # /autoboard:session-workflow — session agent workflow + quality loading + shell safety
-│   ├── verification/SKILL.md   # /autoboard:verification — unified QA (light/full/preflight modes)
-│   └── receiving-review/SKILL.md  # /autoboard:receiving-review — critical thinking for review feedback
-│
-├── agents/                     # Subagent definitions (read-only reviewers)
-│   ├── plan-reviewer.md        # autoboard:plan-reviewer — plan review with quality dimension checks
-│   └── code-reviewer.md        # autoboard:code-reviewer — code review with quality dimension checks
-│
-└── docs/                       # Design docs, manifests, reference
-    └── autoboard/<slug>/       # Per-project directory
-        ├── design.md           # Design doc (from brainstorm)
-        ├── standards.md         # Quality standards (from brainstorm or /standards)
-        ├── manifest.md         # Task manifest (from task-manifest)
-        ├── session-permissions.json  # Session agent permissions (from task-manifest, user-editable)
-        ├── progress.md         # Live progress (updated by orchestrator during run)
-        ├── decisions.md        # Architectural decisions (append-only)
-        └── sessions/           # Session status files (written by session agents)
-            ├── s1-status.md
-            └── s2-status.md
-```
+Conventions — don't enumerate every file, just know where to look:
+
+- **`.claude-plugin/plugin.json`** — Plugin manifest
+- **`bin/spawn-session.sh`** — Thin wrapper around `claude -p` for spawning session agents
+- **`config/default-session-permissions.json`** — Default allow/deny rules for session agents
+- **`standards/dimensions/<name>.md`** — One file per quality dimension (see `standards/README.md`)
+- **`skills/<name>/SKILL.md`** — Each skill lives in its own directory
+- **`agents/<name>.md`** — Subagent definitions (plan-reviewer, code-reviewer)
+- **`docs/`** — Reference docs and design specs
+
+**Skills by role:**
+
+| Role | Skills |
+|---|---|
+| User-facing | `brainstorm`, `standards`, `task-manifest`, `run` |
+| Orchestrator internals | `setup`, `session-spawn`, `merge`, `qa-gate`, `qa-fixer`, `coherence-audit`, `coherence-fixer`, `completion`, `failure`, `knowledge`, `tracking-github`, `audit` |
+| Session agent | `session-workflow`, `verification`, `receiving-review` |
+
+**Runtime artifacts** (generated per-project at `docs/autoboard/<slug>/`, not checked in):
+`design.md`, `standards.md`, `manifest.md`, `session-permissions.json`, `progress.md`, `decisions.md`, `sessions/s<N>-status.md`
 
 ## Git Conventions
 
@@ -90,51 +58,34 @@ autoboard/
 
 ---
 
-## Architectural Philosophy
+## Architecture
 
-### Why Sessions Matter
+**Main Agent = Orchestrator.** It reads a manifest, spawns session agents via `claude -p`, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use `claude -p` (not the Agent tool) because session agents need to spawn their own subagents — a platform constraint.
 
-AI coding agents degrade past 40-60% context window utilization — quality drops, hallucinations increase, and defects compound. AI-generated code produces more bugs than human code; without context isolation, each session builds on potentially broken foundations. Autoboard decomposes ambitious features into focused sessions, each with clean context and structured process gates.
-
-### Core Principle: Main Agent as Orchestrator
-
-Autoboard is a **Claude Code plugin** — skills, agent definitions, and a thin shell wrapper (`bin/spawn-session.sh`).
-
-**The Main Agent is the orchestrator.** It reads a manifest, spawns session agents via `claude -p` subprocesses, merges their work, runs QA gates, and reports progress. It does NOT implement code itself.
-
-**Why `claude -p` instead of the Agent tool?** Claude Code subagents cannot spawn other subagents — a platform constraint. Session agents need to spawn Explore subagents (haiku), plan reviewers, and code reviewers. By using `claude -p`, each session runs as a full main agent with complete tool access.
-
-**Push complexity to the session agents, not the orchestrator.** The orchestrator handles only what agents cannot do for themselves:
-
-| Orchestrator (Main Agent) does | Session Agent does |
+| Orchestrator does | Session Agent does |
 |---|---|
 | Parse manifest, build dependency graph | Explore codebase, plan implementation |
 | Create worktrees, spawn `claude -p` sessions | Execute tasks (TDD, implementation, tests) |
 | Merge session branches to feature branch | Spawn plan-reviewer and code-reviewer subagents |
-| Run QA gates (build validation + browser smoke tests) | Run build verification within worktree |
+| Run QA gates between layers | Run build verification within worktree |
 | Handle failures (retry once, then ask user) | Diagnose and fix issues within session scope |
-| Report progress to user, update progress.md | Write session status files, progress updates, and knowledge |
-| Checkpoint before layers, rollback on QA failure | Commit to session branch |
+| Report progress, update progress.md | Write session status files and knowledge |
 
-### The Session Lifecycle
+### Session Lifecycle
 
-Each session agent autonomously executes this workflow (loaded via `/autoboard:session-workflow`):
+Each session agent executes this workflow (via `/autoboard:session-workflow`):
 
 1. **Explore** — Spawn Explore subagents to understand relevant code
 2. **Plan** — Write implementation plan
-3. **Plan Review** — Spawn independent plan-reviewer subagent; max 3 rounds
+3. **Plan Review** — Spawn plan-reviewer subagent; max 3 rounds
 4. **Implement** — Execute plan task-by-task (TDD where marked: RED → GREEN → REFACTOR)
-5. **Verify** — Run full build pipeline (configurable per-project)
-6. **Code Review** — Spawn independent code-reviewer subagent; max 3 rounds
+5. **Verify** — Run full build pipeline
+6. **Code Review** — Spawn code-reviewer subagent; max 3 rounds
 7. **Commit** — Commit each task, write session status file
 
 ### QA Gates
 
-QA gates are checkpoints defined in the manifest at dependency layer boundaries. The orchestrator runs them between layers to catch compound errors before they propagate.
-
-At each QA gate, the orchestrator spawns a QA subagent that invokes `/autoboard:verification --full`. This runs build validation, starts the dev server, and runs browser smoke tests using whatever browser tool is available (Playwright MCP, Vercel agent-browser, etc.). If no browser tool is installed, it falls back to build-only validation.
-
-QA runs as a **subagent** to keep browser output out of the orchestrator's window.
+QA gates run between dependency layers to catch compound errors. The orchestrator spawns a QA subagent that invokes `/autoboard:verification --full` — build validation + browser smoke tests (Playwright MCP or similar). Falls back to build-only if no browser tool is installed. QA runs as a subagent to keep browser output out of the orchestrator's window.
 
 ---
 
@@ -168,9 +119,8 @@ Two review gates are BLOCKING PREREQUISITES in every session. Skipping either is
 
 ### Security
 
-- **No shell injection.** All subprocess calls in commands must use argument arrays — never string interpolation into shell commands.
+- **No shell injection.** All subprocess calls must use argument arrays — never string interpolation into shell commands.
 - **Validate manifest input.** Task fields parsed from markdown are untrusted. Sanitize file paths, task IDs, and branch names.
-- **Never commit to or push to `main`.** All git operations target session/feature branches only.
 - **Preserve session branches on failure.** Never delete a session branch until its work is successfully merged.
 - **Scoped session permissions.** Sessions run in `dontAsk` mode with project-specific allow/deny rules. Generated by `/autoboard:task-manifest` at `docs/autoboard/{slug}/session-permissions.json`. Fallback: `config/default-session-permissions.json`. Opt out: `skip-permissions: true` in manifest.
 

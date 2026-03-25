@@ -57,9 +57,15 @@ The feature branch is ready for PR when done.
 
 See [CLAUDE.md](CLAUDE.md) for full architecture details.
 
-## Attribution
+## Acknowledgments
 
-- Brainstorming and code review patterns adapted from [Obra:Superpowers](https://github.com/obra/superpowers) (MIT License)
+Autoboard builds on ideas and patterns from [Obra:Superpowers](https://github.com/obra/superpowers) by Jesse Vincent (MIT License) — a fantastic project for giving Claude Code structured skills. The following components were adapted from Superpowers:
+
+- **Brainstorm skill** (`skills/brainstorm/`) — interactive design session workflow
+- **Receiving review skill** (`skills/receiving-review/`) — critical thinking protocol for processing review feedback
+- **Code reviewer agent** (`agents/code-reviewer.md`) — independent code review with quality checks
+
+If you like what Autoboard does with session orchestration, check out Superpowers for a broader collection of Claude Code skills.
 
 ## License
 
