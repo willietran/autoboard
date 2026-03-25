@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.bg-shell/
+.claude/settings.local.json
+.worktrees/
+*.jsonl
+*.tmp
+docs/**/logs/
+docs/**/artifacts/
+docs/**/progress.md
+docs/**/memory.md
+docs/superpowers/specs/

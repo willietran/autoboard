@@ -1,0 +1,5 @@
+{
+  "name": "autoboard",
+  "version": "0.1.0",
+  "description": "AI-driven development orchestrator — breaks features into focused agent sessions with process gates, worktree isolation, and QA checkpoints"
+}
