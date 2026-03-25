@@ -7,7 +7,7 @@ AI-driven development orchestrator for Claude Code. Breaks ambitious features in
 Add the marketplace and install:
 
 ```
-/plugin marketplace add github.com/willietran/autoboard
+/plugin marketplace add willietran/autoboard
 /plugin install autoboard@thelittlebyte
 ```
 

@@ -20,7 +20,7 @@ Autoboard is a Claude Code plugin that decomposes features into parallel coding 
 Add the marketplace and install:
 
 ```
-/plugin marketplace add github.com/willietran/autoboard
+/plugin marketplace add willietran/autoboard
 /plugin install autoboard@thelittlebyte
 ```
 
