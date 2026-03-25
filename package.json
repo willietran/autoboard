@@ -1,6 +1,6 @@
 {
   "name": "@thelittlebyte/autoboard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI-driven development orchestrator for Claude Code",
   "homepage": "https://github.com/willietran/autoboard",
   "repository": {
@@ -13,6 +13,7 @@
   "files": [
     ".claude-plugin/",
     "bin/",
+    "config/",
     "standards/",
     "skills/",
     "agents/",

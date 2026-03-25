@@ -17,13 +17,22 @@ Autoboard is a Claude Code plugin that decomposes features into parallel coding 
 
 ## Installation
 
-Autoboard is loaded as a local plugin via the `--plugin-dir` flag. Add this alias to `~/.zshrc`:
+Add the marketplace and install:
+
+```
+/plugin marketplace add github.com/willietran/autoboard
+/plugin install autoboard@thelittlebyte
+```
+
+### Development
+
+For working on autoboard itself, use the `--plugin-dir` flag:
 
 ```bash
 alias claude="claude --plugin-dir /path/to/autoboard"
 ```
 
-Skills, agents, and all session materials are auto-discovered from the plugin directory. Changes to the repo are instantly reflected — no copying needed.
+Changes to the repo are instantly reflected — no copying needed.
 
 ## Repository Structure
 

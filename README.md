@@ -4,8 +4,11 @@ AI-driven development orchestrator for Claude Code. Breaks ambitious features in
 
 ## Installation
 
-```bash
-claude plugin add @thelittlebyte/autoboard
+Add the marketplace and install:
+
+```
+/plugin marketplace add github.com/willietran/autoboard
+/plugin install autoboard@thelittlebyte
 ```
 
 ### Development
