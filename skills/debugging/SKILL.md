@@ -1,5 +1,5 @@
 ---
-name: debug
+name: debugging
 description: Systematic root cause investigation before attempting fixes. Enforces reproduce-first, trace-backward, single-hypothesis discipline. Adapted from Obra Superpowers (MIT License).
 ---
 
