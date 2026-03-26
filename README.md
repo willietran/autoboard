@@ -67,6 +67,7 @@ Autoboard builds on ideas and patterns from [Obra:Superpowers](https://github.co
 - **Brainstorm skill** (`skills/brainstorm/`) — interactive design session workflow
 - **Receiving review skill** (`skills/receiving-review/`) — critical thinking protocol for processing review feedback
 - **Code reviewer agent** (`agents/code-reviewer.md`) — independent code review with quality checks
+- **Systematic debugging skill** (`skills/systematic-debugging/`) — root cause investigation methodology
 
 If you like what Autoboard does with session orchestration, check out Superpowers for a broader collection of Claude Code skills.
 

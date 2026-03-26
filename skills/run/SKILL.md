@@ -308,13 +308,17 @@ Invoke `/autoboard:qa-gate` via the Skill tool. The QA prompt is a FIXED TEMPLAT
 #### 4j. Process QA Results (NON-NEGOTIABLE)
 
 - **QA passed:** Proceed to knowledge curation.
-- **QA failed with genuine code failures:** Invoke `/autoboard:qa-fixer` via the Skill tool. Do NOT ask the user — just fix it.
+- **QA failed with genuine code failures:** Invoke `/autoboard:qa-fixer` via the Skill tool. Do NOT ask the user — just fix it. The qa-fixer loops internally (fix → re-run QA → fix again) until the gate passes or 10 attempts are exhausted. Never ask the user during this loop.
 - **Infrastructure failure (verified via allowlist + self-check):** Report to user and block.
+
+**Verification:** After the qa-fixer skill returns, you must have a QA-REPORT with `Result: PASS`. The QA-REPORT is the source of truth — not the fixer's status file, not the fixer's commit message. If the final QA-REPORT says FAIL and the fixer limit is not reached, re-invoke `/autoboard:qa-fixer`. If the qa-fixer returned without reaching PASS or exhausting all 10 attempts, something went wrong — re-invoke it.
 
 | Thought that means STOP | Reality |
 |---|---|
 | "The failures look like infrastructure issues" | Verify against the allowlist. Self-check with the browser tool. QA agents fabricate infrastructure claims. |
 | "I'll skip the fixer and report to the user" | Genuine code failures get auto-fixed. Only verified infrastructure failures go to the user. |
+| "QA failed but the fixer says it's fixed" | The QA-REPORT is the source of truth, not the fixer's status file. If QA-REPORT says FAIL, dispatch another fixer. |
+| "The fixer committed, so the bug must be fixed" | A commit proves code changed, not that the bug is gone. Only a passing QA-REPORT proves the fix worked. |
 
 #### 4k. Curate Knowledge (NON-NEGOTIABLE)
 

@@ -75,12 +75,27 @@ use these scenarios to understand what the expected behavior should be.
 Your job: fix the criteria that FAILED in the QA report. Do NOT attempt to
 fix EXPECTED SKIP criteria — the user acknowledged those won't work yet.
 
-Follow the full session workflow: explore what's broken, plan the fix,
-get it reviewed, implement, verify, get code reviewed, commit.
-
 Do NOT rewrite working code. Only fix what the QA report identified.
 
-IMPORTANT: Your fix must solve the ROOT CAUSE, not paper over symptoms.
+## Mandatory Debugging Protocol (NON-NEGOTIABLE)
+
+Before attempting ANY fix, you MUST:
+1. Reproduce the exact failing criterion — if QA failed in browser, reproduce in browser.
+   Use the dev server and browser tool from your Configuration section.
+2. Invoke /autoboard:systematic-debugging via the Skill tool to trace root cause.
+   This loads a structured four-phase methodology: Reproduce → Trace → Hypothesize → Fix.
+   Follow it completely — no shortcuts.
+3. Only after root cause is identified, plan and implement the fix.
+4. After implementing, re-verify against the SAME criterion that failed (same mode —
+   if it was a browser failure, test in browser). Light-mode verification (build+tests)
+   is necessary but NOT sufficient — you must also confirm the specific criterion passes.
+5. Only commit if the criterion now passes.
+
+Do NOT skip reproduction. Do NOT skip systematic debugging. Do NOT verify only with
+build+tests when the failure was in browser. The fix is not done until the original
+failing criterion passes in the same mode it originally failed.
+
+Your fix must solve the ROOT CAUSE, not paper over symptoms.
 No hacky workarounds, no `as any` casts, no skipping tests, no
 disabling checks. The fix must be elegant, clean, and durable — it
 should be indistinguishable from code written correctly the first time.
@@ -97,6 +112,7 @@ If no knowledge file exists: "No prior knowledge."}
 
 - Verify command: {verify from frontmatter}
 - Dev server: {dev-server from frontmatter}
+- QA mode: {qa-mode from frontmatter}
 - Explore model: {explore-model from frontmatter, default: haiku}
 - Plan review model: {plan-review-model from frontmatter, default: sonnet}
 - Code review model: {code-review-model from frontmatter, default: sonnet}
@@ -116,6 +132,7 @@ If the file does not exist or no baseline was captured, write 'No baseline captu
 ## Available Skills and Agents
 
 The session workflow will tell you when to use each of these:
+- /autoboard:systematic-debugging — mandatory before attempting fixes (root cause investigation)
 - /autoboard:verification — verification protocol
 - /autoboard:receiving-review — critical thinking protocol for processing review feedback
 - autoboard:plan-reviewer agent — plan review (model: plan-review-model above)
@@ -157,18 +174,25 @@ After the fixer completes:
 
 ## Retry Logic
 
-### Progress Detection
+### Loop Until Clean
+
+After each fixer attempt completes and is merged, re-run the QA gate with the same acceptance criteria. Compare results:
+
+- **All criteria pass:** QA gate is clean. Done.
+- **Some criteria still fail:** Dispatch another fixer. Include the FULL history of all prior attempts in the brief — which criteria each attempt targeted, what root cause was identified, what fix was applied, and which criteria still failed afterward. Each fixer must have enough context to avoid repeating prior mistakes.
+
+### Progress Tracking
 
 Compare the set of failed criterion names between consecutive QA-REPORTs:
-- **Progress** (failures changed — previous issues fixed, even if new ones surfaced): reset the consecutive-failure counter to 0. Log: "Fixer made progress — previous failures resolved, new failures found. Counter reset."
-- **No progress** (same criteria still failing): increment the consecutive-failure counter. Log: "Fixer did not resolve the assigned failures. Attempt {M} of 5."
+- **Progress** (failures changed — previous issues fixed, even if new ones surfaced): Log: "Attempt {M}: resolved {criteria}. New failures: {criteria}. Dispatching next fixer."
+- **No progress** (same criteria still failing with same evidence): Log: "Attempt {M}: no progress on {criteria}. {remaining} attempts left."
 
 ### Limits
 
-- **Up to 5 consecutive non-progress attempts.** If 5 fixers in a row fail to resolve their assigned failures, escalate to the user.
-- **Hard cap: 15 total fixer attempts per gate**, regardless of progress. This prevents infinite fix-break cycles where each fix introduces exactly one new failure.
+- **Max 10 total fixer attempts per gate.** Every attempt counts — no distinction between "progress" and "no progress" for the cap. This prevents infinite fix-break cycles.
+- **Never ask the user** during the loop. The orchestrator dispatches fixers automatically until the gate passes or the limit is reached.
 
-Each fixer must explore the codebase and create a fix plan before implementing — no blind retries. Each attempt gets a new worktree (`-qa-fix-L{N}-attempt{M}`).
+Each fixer must invoke `/autoboard:systematic-debugging` and trace root cause before implementing — no blind retries. Each attempt gets a new worktree (`-qa-fix-L{N}-attempt{M}`).
 
 ### On Limit Reached
 
@@ -181,11 +205,11 @@ move-ticket(qa-gate, Failed)
 Escalate to the user — report all QA reports and what was attempted:
 
 ```
-QA gate failed — fixer limit reached ({reason: "5 consecutive non-progress attempts" or "15 total attempts"}).
+QA gate failed — fixer limit reached (10 attempts exhausted).
 The gate must pass before proceeding.
 
 Attempts summary:
-{for each attempt: attempt number, which criteria it targeted, whether it made progress}
+{for each attempt: attempt number, root cause identified, fix applied, criteria resolved, criteria still failing}
 
 Options:
 1. I can retry with different instructions you provide
