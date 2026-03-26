@@ -82,7 +82,7 @@ Do NOT rewrite working code. Only fix what the QA report identified.
 Before attempting ANY fix, you MUST:
 1. Reproduce the exact failing criterion — if QA failed in browser, reproduce in browser.
    Use the dev server and browser tool from your Configuration section.
-2. Invoke /autoboard:debugging via the Skill tool to trace root cause.
+2. Invoke /autoboard:diagnose via the Skill tool to trace root cause.
    This loads a structured four-phase methodology: Reproduce → Trace → Hypothesize → Fix.
    Follow it completely — no shortcuts.
 3. Only after root cause is identified, plan and implement the fix.
@@ -132,7 +132,7 @@ If the file does not exist or no baseline was captured, write 'No baseline captu
 ## Available Skills and Agents
 
 The session workflow will tell you when to use each of these:
-- /autoboard:debugging — mandatory before attempting fixes (root cause investigation)
+- /autoboard:diagnose — mandatory before attempting fixes (root cause investigation)
 - /autoboard:verification — verification protocol
 - /autoboard:receiving-review — critical thinking protocol for processing review feedback
 - autoboard:plan-reviewer agent — plan review (model: plan-review-model above)
@@ -192,7 +192,7 @@ Compare the set of failed criterion names between consecutive QA-REPORTs:
 - **Max 10 total fixer attempts per gate.** Every attempt counts — no distinction between "progress" and "no progress" for the cap. This prevents infinite fix-break cycles.
 - **Never ask the user** during the loop. The orchestrator dispatches fixers automatically until the gate passes or the limit is reached.
 
-Each fixer must invoke `/autoboard:debugging` and trace root cause before implementing — no blind retries. Each attempt gets a new worktree (`-qa-fix-L{N}-attempt{M}`).
+Each fixer must invoke `/autoboard:diagnose` and trace root cause before implementing — no blind retries. Each attempt gets a new worktree (`-qa-fix-L{N}-attempt{M}`).
 
 ### On Limit Reached
 
