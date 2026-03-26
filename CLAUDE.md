@@ -52,7 +52,7 @@ Conventions — don't enumerate every file, just know where to look:
 |---|---|
 | User-facing | `brainstorm`, `standards`, `task-manifest`, `run` |
 | Orchestrator internals | `setup`, `session-spawn`, `merge`, `qa-gate`, `qa-fixer`, `coherence-audit`, `coherence-fixer`, `completion`, `failure`, `knowledge`, `tracking-github`, `audit` |
-| Session agent | `session-workflow`, `verification`, `receiving-review`, `systematic-debugging` |
+| Session agent | `session-workflow`, `verification`, `receiving-review`, `debug` |
 
 **Runtime artifacts** (generated per-project at `docs/autoboard/<slug>/`, not checked in):
 `design.md`, `standards.md`, `manifest.md`, `session-permissions.json`, `progress.md`, `decisions.md`, `sessions/s<N>-status.md`
