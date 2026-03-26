@@ -2,7 +2,7 @@
 
 Agentic orchestrator for Claude Code. Breaks ambitious features into focused agent sessions, each with clean context and rigorous process gates. Independent sessions run in isolated git worktrees; Claude Code coordinates spawning, merging, and QA. 
 
-Give Autoboard an idea, go to sleep, wake up to a functioning, well-written app.
+Give Autoboard an idea, go to sleep, wake up to a fully QA'd, tested, and thoroughly code-reviewed app.
 
 ## Installation
 
