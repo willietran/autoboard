@@ -368,9 +368,25 @@ Updated: {ISO timestamp}
 
 Then immediately proceed to the next layer. Do NOT ask the user if they want to continue.
 
-### Step 5: Completion
+### Step 5: Completion (NON-NEGOTIABLE)
 
-Invoke `/autoboard:completion` via the Skill tool. This runs a full-spectrum coherence audit (all 13 dimensions, no exclusions) to catch compound issues across all layers, then runs the final QA gate (cumulative acceptance criteria from all prior gates + full design doc), updates progress, cleans up worktrees, and reports results.
+Invoke `/autoboard:completion` via the Skill tool. Completion has TWO quality gates that must both run:
+1. **Full-spectrum coherence audit** — all 13 dimensions, no exclusions, scoped to the entire feature's changes. Catches compound issues and cross-layer drift that per-layer audits missed.
+2. **Final QA gate** — cumulative acceptance criteria from all prior gates + full design doc.
+
+After that, it updates progress, cleans up worktrees, and reports results.
+
+**Do NOT skip any step within completion.** The audit MUST run before the QA gate. Both must produce their respective report blocks.
+
+**Verification:** After completion returns, verify that BOTH a `~~~COHERENCE-REPORT` block AND a `~~~QA-REPORT` block were produced during completion. If either is missing, completion did not run fully — go back and run the missing step.
+
+| Thought that means STOP | Reality |
+|---|---|
+| "Completion is just cleanup, the real work is done" | Completion runs the full-spectrum audit + final QA gate. It's the most important quality checkpoint of the entire run. |
+| "I'll just run the final QA gate directly" | The audit MUST run first. It catches architecture issues QA can't test for. |
+| "Per-layer audits were clean, skip the final one" | The final audit is all 13 dimensions unfiltered — different scope than per-layer audits which use filtered subsets. |
+| "All sessions passed, time to wrap up" | Sessions validate their own work. The final audit validates the integrated result across all sessions and layers. |
+| "I'll do a quick manual review instead of the audit" | A manual review is not a structured 13-dimension audit with parallel agents. Invoke the completion skill. |
 
 ---
 

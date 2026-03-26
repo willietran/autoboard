@@ -11,17 +11,30 @@ All layers are done. Run a final QA gate, clean up, and report results.
 
 ---
 
-## Step 1: Full-Spectrum Coherence Audit
+## Step 1: Full-Spectrum Coherence Audit (NON-NEGOTIABLE)
 
-Before the final QA gate, run a full-spectrum coherence audit across ALL 13 quality dimensions — no file-pattern filtering, no exclusions. This catches compound issues and cross-layer drift that per-layer audits missed.
+Before the final QA gate, run a full-spectrum coherence audit across ALL 13 quality dimensions — no file-pattern filtering, no exclusions. This catches compound issues and cross-layer drift that per-layer audits missed. Per-layer audits use filtered dimension subsets — this is all 13, unfiltered. Different scope, different purpose.
+
+**Do NOT skip this step.** Do NOT substitute with an Explore agent or manual review. Do NOT proceed to the final QA gate without completing this audit. The audit is a prerequisite for the final QA gate — not optional, not skippable, not replaceable.
 
 Invoke `/autoboard:audit --checkpoint {earliest-checkpoint-sha} --dimensions security,error-handling,type-safety,dry-code-reuse,test-quality,config-management,frontend-quality,data-modeling,api-design,observability,performance,code-organization,developer-infrastructure` via the Skill tool.
 
 Use the earliest checkpoint SHA from the run (the commit before Layer 0's merges) to scope the audit to the entire feature's changes.
 
-If BLOCKING issues are found, dispatch `/autoboard:coherence-fixer` — same retry logic as layer coherence audits (up to 5 consecutive non-progress attempts, 15 total). All BLOCKING issues must be resolved before proceeding to the final QA gate.
+**Verification:** You must have a `~~~COHERENCE-REPORT` block after this step. If you do not have one, you did not run the audit correctly. Go back and run it.
+
+If BLOCKING issues are found, dispatch `/autoboard:coherence-fixer` — same retry logic as layer coherence audits (up to 5 consecutive non-progress attempts, 15 total). All BLOCKING issues must be resolved before proceeding to the final QA gate. If fixer limit reached, escalate to the user. Do NOT skip the audit and proceed to QA.
 
 If no BLOCKING issues, proceed immediately to Step 2. Do not stop here — the audit is an intermediate step, not a deliverable.
+
+| Thought that means STOP | Reality |
+|---|---|
+| "Per-layer audits already caught everything" | Per-layer audits use filtered dimensions. This is all 13, unfiltered — different scope. Compound cross-layer issues only surface here. |
+| "I'll skip the audit since QA will catch issues" | QA tests functionality. Audits catch architecture drift, DRY violations, convention divergence. Different concerns. |
+| "This is a small feature, full audit is overkill" | Compound issues scale with layers, not feature size. Every completion gets audited. No exceptions. |
+| "I'll go straight to QA to save time" | A skipped audit means cross-layer issues ship. The audit is a prerequisite, not optional. |
+| "The final QA gate is the real quality check" | QA verifies behavior. The audit verifies structure. Both are required. One does not substitute for the other. |
+| "I already reviewed the merge diffs" | Reviewing diffs is not a structured 13-dimension audit with parallel agents. Invoke the skill. |
 
 ---
 
