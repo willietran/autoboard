@@ -60,9 +60,9 @@ max-parallel: 2
 - **Requirements:**
   - Add `detect_platform()` function at the top of `spawn-session.sh`:
     - Check `AUTOBOARD_PLATFORM` env var first (validate against allowlist: `claude-code`, `codex`)
-    - Then check `CLAUDE_CODE=1` for Claude Code
+    - Then check `CLAUDECODE=1` for Claude Code
     - Then check `CODEX_CI` for Codex
-    - If both `CLAUDE_CODE` and `CODEX_CI` are set, warn to stderr and default to `claude-code`
+    - If both `CLAUDECODE` and `CODEX_CI` are set, warn to stderr and default to `claude-code`
     - If none detected, exit with error listing expected env vars and the override mechanism
   - Add `--effort` CLI argument (accepts `low`, `medium`, `high`, `max`; validate against allowlist)
   - Rename `CLAUDE_PID` to `SESSION_PID` throughout the script (12 occurrences)
@@ -84,18 +84,18 @@ max-parallel: 2
 - **Commit:** `task 1: refactor spawn-session.sh for cross-platform support`
 - **Test approach:** `unit`
 - **Key test scenarios:**
-  - Happy path: `CLAUDE_CODE=1` set -> detects `claude-code`, builds correct Claude Code args
+  - Happy path: `CLAUDECODE=1` set -> detects `claude-code`, builds correct Claude Code args
   - Happy path: `CODEX_CI=1` set -> detects `codex`, builds correct Codex args
   - Happy path: `AUTOBOARD_PLATFORM=codex` overrides env vars -> uses Codex path
   - Error path: Neither env var set, no override -> exits with descriptive error
   - Error path: `AUTOBOARD_PLATFORM=invalid` -> exits listing valid values
-  - Edge case: Both `CLAUDE_CODE=1` and `CODEX_CI=1` set -> warns, uses claude-code
+  - Edge case: Both `CLAUDECODE=1` and `CODEX_CI=1` set -> warns, uses claude-code
   - Effort mapping: `--effort max` on Codex -> `-c model_reasoning_effort="xhigh"`
   - Effort mapping: `--effort medium` -> effort flag omitted entirely on both platforms
   - Effort mapping: `--effort invalid` -> exits with error
   - Model alias: `--model opus` on Claude Code -> `claude-opus-4-6`; on Codex -> passed through as `opus`
   - Permission flags: `--settings file.json` on Claude Code -> `--permission-mode dontAsk --settings file.json`; on Codex -> `--ask-for-approval never --sandbox workspace-write`
-  - Detect-platform flag: `bin/spawn-session.sh --detect-platform` with `CLAUDE_CODE=1` -> prints `claude-code` and exits
+  - Detect-platform flag: `bin/spawn-session.sh --detect-platform` with `CLAUDECODE=1` -> prints `claude-code` and exits
   - Regression: Claude Code argument construction produces identical output to current script
 - **Complexity Score:** 4
 - **Suggested Session:** S1

@@ -69,7 +69,7 @@ Conventions — don't enumerate every file, just know where to look:
 
 ## Architecture
 
-**Main Agent = Orchestrator.** It reads a manifest, spawns session agents via `claude -p`, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use `claude -p` (not the Agent tool) because session agents need to spawn their own subagents — a platform constraint.
+**Main Agent = Orchestrator.** It reads a manifest, spawns session agents via `claude -p`, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use CLI subprocesses (`claude -p` or `codex exec`) rather than subagents because session agents need to spawn their own subagents — a platform constraint.
 
 | Orchestrator does | Session Agent does |
 |---|---|

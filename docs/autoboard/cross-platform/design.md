@@ -27,7 +27,7 @@ Both platforms have the features Autoboard depends on:
 | Project instructions | `CLAUDE.md` | `AGENTS.md` |
 | Config format | `settings.json` (JSON) | `config.toml` (TOML) |
 | Effort control | `--effort low\|medium\|high\|max` | `-c model_reasoning_effort="low\|medium\|high\|xhigh"` |
-| Env detection | `CLAUDE_CODE=1` | `CODEX_CI=1` |
+| Env detection | `CLAUDECODE=1` | `CODEX_CI=1` |
 
 ## Architecture
 
@@ -63,15 +63,15 @@ detect_platform() {
       claude-code|codex) echo "$AUTOBOARD_PLATFORM" ;;
       *) echo "ERROR: Invalid AUTOBOARD_PLATFORM='$AUTOBOARD_PLATFORM'. Valid: claude-code, codex" >&2; exit 1 ;;
     esac
-  elif [ "$CLAUDE_CODE" = "1" ] && [ -n "$CODEX_CI" ]; then
-    echo "WARNING: Both CLAUDE_CODE and CODEX_CI set. Using claude-code. Override with AUTOBOARD_PLATFORM." >&2
+  elif [ "$CLAUDECODE" = "1" ] && [ -n "$CODEX_CI" ]; then
+    echo "WARNING: Both CLAUDECODE and CODEX_CI set. Using claude-code. Override with AUTOBOARD_PLATFORM." >&2
     echo "claude-code"
-  elif [ "$CLAUDE_CODE" = "1" ]; then
+  elif [ "$CLAUDECODE" = "1" ]; then
     echo "claude-code"
   elif [ -n "$CODEX_CI" ]; then
     echo "codex"
   else
-    echo "ERROR: Not running inside a supported CLI. Expected CLAUDE_CODE=1 or CODEX_CI=1. Override with AUTOBOARD_PLATFORM=claude-code|codex" >&2
+    echo "ERROR: Not running inside a supported CLI. Expected CLAUDECODE=1 or CODEX_CI=1. Override with AUTOBOARD_PLATFORM=claude-code|codex" >&2
     exit 1
   fi
 }
@@ -233,7 +233,7 @@ Skills that reference the `Agent` tool may need conditional language for Codex u
 Autoboard's session spawning uses the `Bash` tool to invoke `bin/spawn-session.sh`, which calls the CLI binary (`claude` or `codex`). As long as the CLI binary is on PATH — which it is when the platform is installed — sessions spawn correctly regardless of whether the orchestrator runs in the desktop app, CLI, or IDE extension.
 
 **Verification items:**
-- Confirm `CLAUDE_CODE=1` / `CODEX_CI=1` env vars are set from desktop app context
+- Confirm `CLAUDECODE=1` / `CODEX_CI=1` env vars are set from desktop app context
 - Confirm CLI binary is on PATH from desktop app context
 - Test end-to-end session spawning from each desktop app
 
@@ -289,7 +289,7 @@ Per-session effort is set in the sessions table:
 ### Testable Components
 
 **`bin/spawn-session.sh`** — The primary platform adapter. Key test scenarios:
-- Platform detection: `CLAUDE_CODE=1` set -> detects claude-code; `CODEX_CI=1` set -> detects codex; both set -> claude-code wins; neither set -> error; `AUTOBOARD_PLATFORM` override -> uses override
+- Platform detection: `CLAUDECODE=1` set -> detects claude-code; `CODEX_CI=1` set -> detects codex; both set -> claude-code wins; neither set -> error; `AUTOBOARD_PLATFORM` override -> uses override
 - Model passthrough: alias mapping for Claude Code; direct passthrough for Codex
 - Effort mapping: `max` -> `xhigh` on Codex; `medium` omitted (default); other values passed through
 - Argument construction: correct flags for each platform; permission flags; `--plugin-dir` for Claude Code vs repo-based discovery for Codex
@@ -335,7 +335,7 @@ These require manual integration testing or CI with both CLIs installed.
 
 ### Flow 2: Claude Code User (Regression)
 1. Existing Autoboard workflow unchanged
-2. Platform detection picks Claude Code via `CLAUDE_CODE=1`
+2. Platform detection picks Claude Code via `CLAUDECODE=1`
 3. All current flags and behavior preserved
 4. **Error case:** Neither env var set (weird environment) -> clear error, suggest `AUTOBOARD_PLATFORM` override
 

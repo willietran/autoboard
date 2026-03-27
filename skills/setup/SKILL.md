@@ -65,7 +65,7 @@ skip-permissions: false        # Skip session permission scoping (default: false
 
 For backward compatibility: `github-project: true` is treated as `tracking-provider: github`.
 
-**Platform field:** `platform: auto | claude-code | codex` (default: `auto`). When `auto`, the platform is detected at runtime via `bin/spawn-session.sh --detect-platform` (checks `CLAUDE_CODE=1`, `CODEX_CI=1`, and `AUTOBOARD_PLATFORM` env vars). When set explicitly, the manifest value overrides auto-detection.
+**Platform field:** `platform: auto | claude-code | codex` (default: `auto`). When `auto`, the platform is detected at runtime via `bin/spawn-session.sh --detect-platform` (checks `CLAUDECODE=1`, `CODEX_CI=1`, and `AUTOBOARD_PLATFORM` env vars). When set explicitly, the manifest value overrides auto-detection.
 
 ### Sessions
 

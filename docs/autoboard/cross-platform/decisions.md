@@ -16,7 +16,7 @@
 
 ## D3: Auto-detect platform from environment variables
 
-**Decision:** Detect platform via `CLAUDE_CODE=1` or `CODEX_CI=1` env vars. Override via `AUTOBOARD_PLATFORM` env var for edge cases.
+**Decision:** Detect platform via `CLAUDECODE=1` or `CODEX_CI=1` env vars. Override via `AUTOBOARD_PLATFORM` env var for edge cases.
 
 **Why:** If you're running Autoboard from Codex, the answer is obviously Codex. Users shouldn't have to configure what's already known. The env var override handles CI pipelines and testing.
 
