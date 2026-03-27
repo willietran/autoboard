@@ -39,7 +39,7 @@ If the setup command fails, diagnose and fix before spawning the QA agent. A QA 
 
 The `expected-skips` placeholder is the ONLY place skip information enters the prompt, and it comes verbatim from the manifest — not from your judgment. If you believe a criterion can't be tested, let the QA agent discover that. Your job is to validate its claims afterward (fabrication detection), not to preempt them.
 
-Spawn a QA subagent via the **Agent tool** (NOT `claude -p`) — this keeps browser screenshots and verbose output out of the orchestrator's context window:
+Spawn a QA subagent via the **Agent tool** (NOT a CLI subprocess) — this keeps browser screenshots and verbose output out of the orchestrator's context window:
 
 ```
 Agent(
