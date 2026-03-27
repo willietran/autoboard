@@ -63,29 +63,29 @@ assert_exit_nonzero() {
 
 echo "=== Platform Detection ==="
 
-# Test: CLAUDE_CODE=1 -> detects claude-code
-result=$(CLAUDE_CODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
-assert_eq "CLAUDE_CODE=1 detects claude-code" "claude-code" "$result"
+# Test: CLAUDECODE=1 -> detects claude-code
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
+assert_eq "CLAUDECODE=1 detects claude-code" "claude-code" "$result"
 
 # Test: CODEX_CI=1 -> detects codex
-result=$(CLAUDE_CODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
+result=$(CLAUDECODE="" CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
 assert_eq "CODEX_CI=1 detects codex" "codex" "$result"
 
 # Test: AUTOBOARD_PLATFORM override
-result=$(CLAUDE_CODE=1 CODEX_CI="" AUTOBOARD_PLATFORM=codex bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM=codex bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
 assert_eq "AUTOBOARD_PLATFORM=codex overrides env" "codex" "$result"
 
-result=$(CLAUDE_CODE="" CODEX_CI=1 AUTOBOARD_PLATFORM=claude-code bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
+result=$(CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM=claude-code bash "$SPAWN_SCRIPT" --detect-platform 2>/dev/null)
 assert_eq "AUTOBOARD_PLATFORM=claude-code overrides env" "claude-code" "$result"
 
 # Test: Both env vars set -> warns, uses claude-code
-output=$(CLAUDE_CODE=1 CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform 2>&1)
+output=$(CLAUDECODE=1 CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform 2>&1)
 assert_contains "Both env vars set: stdout has claude-code" "claude-code" "$output"
 assert_contains "Both env vars set: warns on stderr" "WARNING" "$output"
 
 # Test: Neither env var set -> error
 assert_exit_nonzero "Neither env var: exits non-zero" \
-  env CLAUDE_CODE="" CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform
+  env CLAUDECODE="" CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --detect-platform
 
 # Test: Invalid AUTOBOARD_PLATFORM -> error
 assert_exit_nonzero "Invalid AUTOBOARD_PLATFORM: exits non-zero" \
@@ -101,38 +101,38 @@ echo "test prompt" > "$TEMP_BRIEF"
 trap "rm -f '$TEMP_BRIEF'" EXIT
 
 # Test: --effort max on Codex -> xhigh
-result=$(CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --effort max 2>/dev/null)
+result=$(CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --effort max 2>/dev/null)
 assert_contains "Codex effort max -> xhigh" "xhigh" "$result"
 
 # Test: --effort max on Claude Code -> max
-result=$(CLAUDE_CODE=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort max 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort max 2>/dev/null)
 assert_contains "Claude Code effort max -> max" "--effort max" "$result"
 
 # Test: --effort medium -> omitted on both platforms
-result=$(CLAUDE_CODE=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort medium 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort medium 2>/dev/null)
 assert_not_contains "Claude Code effort medium -> omitted" "--effort" "$result"
 
-result=$(CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --effort medium 2>/dev/null)
+result=$(CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --effort medium 2>/dev/null)
 assert_not_contains "Codex effort medium -> omitted" "reasoning_effort" "$result"
 
 # Test: --effort high on Claude Code
-result=$(CLAUDE_CODE=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort high 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort high 2>/dev/null)
 assert_contains "Claude Code effort high -> --effort high" "--effort high" "$result"
 
 # Test: --effort high on Codex
-result=$(CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --effort high 2>/dev/null)
+result=$(CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --effort high 2>/dev/null)
 assert_contains "Codex effort high -> reasoning_effort high" "model_reasoning_effort=\"high\"" "$result"
 
 # Test: --effort invalid -> error
 assert_exit_nonzero "Invalid effort: exits non-zero" \
-  env CLAUDE_CODE=1 bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort invalid
+  env CLAUDECODE=1 bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --effort invalid
 
 # --- Argument Construction Tests ---
 
 echo "=== Argument Construction ==="
 
 # Test: Claude Code builds correct args
-result=$(CLAUDE_CODE=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --settings /tmp/perms.json 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --settings /tmp/perms.json 2>/dev/null)
 assert_contains "Claude Code: has -p" " -p " "$result"
 assert_contains "Claude Code: has --model" "--model claude-opus-4-6" "$result"
 assert_contains "Claude Code: has --plugin-dir" "--plugin-dir" "$result"
@@ -142,7 +142,7 @@ assert_contains "Claude Code: has dontAsk" "--permission-mode dontAsk" "$result"
 assert_contains "Claude Code: has --settings" "--settings /tmp/perms.json" "$result"
 
 # Test: Codex builds correct args
-result=$(CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 2>/dev/null)
+result=$(CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 2>/dev/null)
 assert_contains "Codex: starts with 'codex exec'" "codex exec" "$result"
 assert_contains "Codex: has --json" "--json" "$result"
 assert_contains "Codex: has -c model" "-c model=\"gpt-5.4\"" "$result"
@@ -152,22 +152,22 @@ assert_not_contains "Codex: no --plugin-dir" "--plugin-dir" "$result"
 assert_not_contains "Codex: no --verbose" "--verbose" "$result"
 
 # Test: Codex with --skip-permissions
-result=$(CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --skip-permissions 2>/dev/null)
+result=$(CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model gpt-5.4 --skip-permissions 2>/dev/null)
 assert_contains "Codex skip-permissions: has --sandbox danger-full-access" "--sandbox danger-full-access" "$result"
 
 # Test: Claude Code with --skip-permissions
-result=$(CLAUDE_CODE=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --skip-permissions 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus --skip-permissions 2>/dev/null)
 assert_contains "Claude Code skip-permissions: has --dangerously-skip-permissions" "--dangerously-skip-permissions" "$result"
 
 # Test: Claude Code model alias mapping
-result=$(CLAUDE_CODE=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model sonnet 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model sonnet 2>/dev/null)
 assert_contains "Claude Code model alias sonnet" "claude-sonnet-4-6" "$result"
 
-result=$(CLAUDE_CODE=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model haiku 2>/dev/null)
+result=$(CLAUDECODE=1 CODEX_CI="" AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model haiku 2>/dev/null)
 assert_contains "Claude Code model alias haiku" "claude-haiku-4-5-20251001" "$result"
 
 # Test: Codex passes model IDs through (no alias mapping)
-result=$(CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus 2>/dev/null)
+result=$(CLAUDECODE="" CODEX_CI=1 AUTOBOARD_PLATFORM="" bash "$SPAWN_SCRIPT" --dry-run "$TEMP_BRIEF" --model opus 2>/dev/null)
 assert_contains "Codex model passthrough: opus as-is" "-c model=\"opus\"" "$result"
 
 # --- Results ---

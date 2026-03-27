@@ -27,15 +27,15 @@ detect_platform() {
       claude-code|codex) echo "$AUTOBOARD_PLATFORM" ;;
       *) echo "ERROR: Invalid AUTOBOARD_PLATFORM='$AUTOBOARD_PLATFORM'. Valid: claude-code, codex" >&2; exit 1 ;;
     esac
-  elif [ "${CLAUDE_CODE:-}" = "1" ] && [ -n "${CODEX_CI:-}" ]; then
-    echo "WARNING: Both CLAUDE_CODE and CODEX_CI set. Using claude-code. Override with AUTOBOARD_PLATFORM." >&2
+  elif [ "${CLAUDECODE:-}" = "1" ] && [ -n "${CODEX_CI:-}" ]; then
+    echo "WARNING: Both CLAUDECODE and CODEX_CI set. Using claude-code. Override with AUTOBOARD_PLATFORM." >&2
     echo "claude-code"
-  elif [ "${CLAUDE_CODE:-}" = "1" ]; then
+  elif [ "${CLAUDECODE:-}" = "1" ]; then
     echo "claude-code"
   elif [ -n "${CODEX_CI:-}" ]; then
     echo "codex"
   else
-    echo "ERROR: Not running inside a supported CLI. Expected CLAUDE_CODE=1 or CODEX_CI=1. Override with AUTOBOARD_PLATFORM=claude-code|codex" >&2
+    echo "ERROR: Not running inside a supported CLI. Expected CLAUDECODE=1 or CODEX_CI=1. Override with AUTOBOARD_PLATFORM=claude-code|codex" >&2
     exit 1
   fi
 }
