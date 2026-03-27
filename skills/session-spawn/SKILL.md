@@ -142,6 +142,7 @@ Spawn all sessions in the layer as **parallel background Bash commands** in a si
 ```bash
 bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
+  --effort {effort from sessions table, or omit if not specified} \
   --cwd /tmp/autoboard-{slug}-s{N} \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
@@ -153,6 +154,7 @@ If the manifest has `skip-permissions: true`, use `--skip-permissions` instead o
 ```bash
 bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
+  --effort {effort from sessions table, or omit if not specified} \
   --cwd /tmp/autoboard-{slug}-s{N} \
   --skip-permissions \
   --standards "docs/autoboard/{slug}/standards.md" \
@@ -160,11 +162,13 @@ bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
-Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
+**Effort level:** Read the `Effort` column from the sessions table in the manifest. If the session has an effort level (e.g., `high`, `max`), pass `--effort {level}` to the spawn script. If no Effort column exists (backward compatibility with older manifests), omit the `--effort` flag — the spawn script defaults to `medium` on both platforms.
+
+Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles platform detection, `--plugin-dir` (Claude Code) or repo-based skill discovery (Codex), model ID mapping, effort level mapping (`max` -> `xhigh` on Codex), output format flags, mechanical injection of standards/test-baseline files into the prompt, and permission scoping per platform.
 
 **Do NOT paste standards or test-baseline content into the brief.** The shell script appends these files mechanically via `--standards` and `--test-baseline` flags. If the files don't exist, the script silently skips them.
 
-Each session runs as a `claude -p` subprocess — a **full main agent** with complete tool access, including the Agent tool. This means sessions CAN spawn Explore subagents (haiku), plan-reviewer, and code-reviewer subagents.
+Each session runs as a CLI subprocess (`claude -p` on Claude Code, `codex exec` on Codex) — a **full main agent** with complete tool access, including subagent spawning. This means sessions CAN spawn Explore subagents, plan-reviewer, and code-reviewer subagents.
 
 ### PID File
 
