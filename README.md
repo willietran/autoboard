@@ -51,14 +51,28 @@ Launches the orchestrator. Spawns parallel session agents via `claude -p` in iso
 
 The feature branch is ready for PR when done.
 
-## How It Works
+## Features
 
-- **Session agents** work in isolated git worktrees with dependency-aware scheduling
-- **Squash merges** bring each session's work onto the feature branch
-- **Review gates** ensure every plan and implementation gets independent review before proceeding
-- **QA gates** run build validation and Playwright smoke tests between dependency layers
-- **Configurable quality standards** let you tune which dimensions matter for your project
-- **GitHub Projects integration** (optional) creates a kanban board with live status updates
+### Orchestration
+- **Parallel multi-agent scheduling** — Sessions run concurrently in dependency-aware layers; upstream work completes before downstream sessions start
+- **Isolated sessions** — Each agent works in its own git worktree with scoped permissions; squash-merged as one commit
+- **Resumable runs** — Detects completed sessions and picks up where it left off if the orchestrator crashes
+
+### Quality Gates
+- **Mandatory review gates** — Plan review and code review subagents run before any merge
+- **TDD enforcement** — Tasks follow RED → GREEN → REFACTOR phases with test baselines that distinguish regressions from pre-existing failures
+- **QA pipeline** — Build + browser tests between dependency layers to prevent building on top of stuff that never worked
+- **Coherence audits** — Cross-session checks for DRY violations and architecture drift, so downstream agents don't create a spaghetti factory
+
+### Failure & Recovery
+- **Failure diagnosis** — Classifies failures (permission denial vs dependency cascade vs code bug), retries with context, escalates only when stuck
+- **Fabrication detection** — QA validates agent claims; catches agents lying about infrastructure failures
+- **Knowledge curation** — Prior session learnings deduplicated and briefed to next-layer agents
+
+### Configuration
+- **Configurable models** — Different models per role (sessions, reviewers, exploration)
+- **13 quality dimensions** — Security, test quality, DRY, performance, and more — tuned per-project and enforced by reviewers
+- **GitHub Projects** — Optional kanban board with live status updates
 
 See [CLAUDE.md](CLAUDE.md) for full architecture details.
 
