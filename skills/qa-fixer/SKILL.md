@@ -34,7 +34,7 @@ Write brief to `/tmp/autoboard-{slug}-qa-fix-L{N}-brief.md`:
 ```
 You are a autoboard session agent.
 
-Your FIRST action must be to invoke /autoboard:session-workflow via the Skill tool.
+Your FIRST action must be to invoke the /autoboard:session-workflow skill.
 This loads your full workflow and shell safety guidelines.
 Do NOT write any code or make any changes before invoking this skill.
 
@@ -82,7 +82,7 @@ Do NOT rewrite working code. Only fix what the QA report identified.
 Before attempting ANY fix, you MUST:
 1. Reproduce the exact failing criterion — if QA failed in browser, reproduce in browser.
    Use the dev server and browser tool from your Configuration section.
-2. Invoke /autoboard:diagnose via the Skill tool to trace root cause.
+2. Invoke the /autoboard:diagnose skill to trace root cause.
    This loads a structured four-phase methodology: Reproduce → Trace → Hypothesize → Fix.
    Follow it completely — no shortcuts.
 3. Only after root cause is identified, plan and implement the fix.

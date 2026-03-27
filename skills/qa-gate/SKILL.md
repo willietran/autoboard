@@ -5,7 +5,7 @@ description: Run QA gate validation at a layer boundary. Spawns QA subagent, val
 
 # QA Gate
 
-Run acceptance testing and regression checks at a layer boundary. The orchestrator spawns a QA subagent (Agent tool), then exercises its most critical judgment: validating the QA agent's claims before routing the result.
+Run acceptance testing and regression checks at a layer boundary. The orchestrator spawns a QA subagent, then exercises its most critical judgment: validating the QA agent's claims before routing the result.
 
 **Prerequisites:**
 - A COHERENCE-REPORT must exist for this layer (from the coherence-audit skill). If you do not have one, STOP and run the coherence audit first. The QA brief requires the COHERENCE-REPORT.
@@ -39,13 +39,13 @@ If the setup command fails, diagnose and fix before spawning the QA agent. A QA 
 
 The `expected-skips` placeholder is the ONLY place skip information enters the prompt, and it comes verbatim from the manifest — not from your judgment. If you believe a criterion can't be tested, let the QA agent discover that. Your job is to validate its claims afterward (fabrication detection), not to preempt them.
 
-Spawn a QA subagent via the **Agent tool** (NOT a CLI subprocess) — this keeps browser screenshots and verbose output out of the orchestrator's context window:
+Spawn a QA subagent (NOT a CLI subprocess) — this keeps browser screenshots and verbose output out of the orchestrator's context window:
 
 ```
 Agent(
   prompt: "You are a QA validator for the autoboard project.
 
-  Your FIRST action: invoke /autoboard:verification --full via the Skill tool.
+  Your FIRST action: invoke the /autoboard:verification --full skill.
 
   Configuration for the verification skill:
   - qa-mode: {qa-mode from frontmatter — 'full' or 'build-only'}

@@ -76,7 +76,7 @@ Autoboard orchestrator starting. I am the engineering lead for this run.
 Running setup, then executing all layers to completion.
 ```
 
-Then invoke `/autoboard:setup` via the Skill tool. This handles:
+Then invoke the `/autoboard:setup` skill. This handles:
 - Project resolution (find design doc, manifest, standards)
 - Git prerequisites and feature branch checkout
 - Manifest parsing (sessions, layers, dependencies, QA gates)
@@ -106,7 +106,7 @@ If there's nothing to commit, this is a no-op. Proceed immediately to Step 2.
 
 Load the tracking provider based on manifest frontmatter:
 
-- If `tracking-provider` is `github` OR `github-project` is `true`: invoke `/autoboard:tracking-github` via the Skill tool. Follow its "For Orchestrators > Setup" section to create the project board.
+- If `tracking-provider` is `github` OR `github-project` is `true`: invoke the `/autoboard:tracking-github` skill. Follow its "For Orchestrators > Setup" section to create the project board.
 - If `tracking-provider` is absent or `none`: skip. No tracking for this run.
 
 **After tracking loads (or is skipped)**, proceed immediately to Step 3.
@@ -210,7 +210,7 @@ git diff --cached --quiet || git commit -m "docs: pre-spawn artifacts for layer 
 
 This catches tracking config (from Step 2), progress updates (from prior layer's Step 4l), knowledge files (from prior layer's Step 4k), and any other docs modified between layers. No-op if nothing changed.
 
-Invoke `/autoboard:session-spawn` via the Skill tool. Do NOT build session briefs manually — the skill contains the exact template with all required sections (session identity, tasks, knowledge, configuration, quality standards, test baseline, available skills, tracking).
+Invoke the `/autoboard:session-spawn` skill. Do NOT build session briefs manually — the skill contains the exact template with all required sections (session identity, tasks, knowledge, configuration, quality standards, test baseline, available skills, tracking).
 
 Re-invoke at the start of each new layer to keep instructions fresh.
 
@@ -233,7 +233,7 @@ For each completed session:
 3. If status file is missing or exit code is non-zero, check git log on the session branch
 4. Update `docs/autoboard/{slug}/progress.md`
 5. If **success**: proceed to merge
-6. If **failure**: invoke `/autoboard:failure` via the Skill tool for diagnosis, retry, or escalation
+6. If **failure**: invoke the `/autoboard:failure` skill for diagnosis, retry, or escalation
 
 **Verification:** Every session in this layer has a classification (success or failure) and an action taken.
 
@@ -245,7 +245,7 @@ For each completed session:
 
 #### 4f. Merge Successful Sessions (NON-NEGOTIABLE)
 
-Invoke `/autoboard:merge` via the Skill tool. Follow its squash merge policy exactly — one commit per session, sequential (no parallel merges).
+Invoke the `/autoboard:merge` skill. Follow its squash merge policy exactly — one commit per session, sequential (no parallel merges).
 
 **Verification:** Each merged session has exactly one commit on the feature branch with message `S{N}: {session focus}`.
 
@@ -257,7 +257,7 @@ Invoke `/autoboard:merge` via the Skill tool. Follow its squash merge policy exa
 
 #### 4g. Run Coherence Audit (NON-NEGOTIABLE)
 
-Invoke `/autoboard:coherence-audit` via the Skill tool. This skill invokes `/autoboard:audit --checkpoint` which spawns parallel dimension agents — one per quality dimension, each with a structured checklist.
+Invoke the `/autoboard:coherence-audit` skill. This skill invokes `/autoboard:audit --checkpoint` which spawns parallel dimension agents — one per quality dimension, each with a structured checklist.
 
 **Do NOT substitute.** Do NOT use an Explore agent. Do NOT do a manual review. Do NOT skip for "simple" layers or single-session layers. Every layer gets audited via the audit skill. No exceptions.
 
@@ -274,14 +274,14 @@ Invoke `/autoboard:coherence-audit` via the Skill tool. This skill invokes `/aut
 
 #### 4h. Process Coherence Results (NON-NEGOTIABLE)
 
-Invoke `/autoboard:receiving-review` to critically evaluate each audit finding before acting.
+Invoke the `/autoboard:receiving-review` to critically evaluate each audit finding before acting.
 Apply the READ → UNDERSTAND → VERIFY → EVALUATE → RESPOND workflow to the coherence report.
 In particular: verify that each BLOCKING finding meets the blocking criteria (build-breaking, agent-degrading, or user-impacting).
 If a finding clearly does not meet ANY criterion, downgrade it to INFO with a one-line justification logged to progress.md.
 
 After evaluation:
 - **No BLOCKING issues remain:** Proceed to QA gate or knowledge curation.
-- **BLOCKING issues remain:** Invoke `/autoboard:coherence-fixer` via the Skill tool. Do NOT attempt to fix issues yourself.
+- **BLOCKING issues remain:** Invoke the `/autoboard:coherence-fixer` skill. Do NOT attempt to fix issues yourself.
 
 | Thought that means STOP | Reality |
 |---|---|
@@ -291,7 +291,7 @@ After evaluation:
 
 #### 4i. Run QA Gate (NON-NEGOTIABLE — at every layer boundary that has one in the manifest)
 
-Invoke `/autoboard:qa-gate` via the Skill tool. The QA prompt is a FIXED TEMPLATE — fill in data placeholders only.
+Invoke the `/autoboard:qa-gate` skill. The QA prompt is a FIXED TEMPLATE — fill in data placeholders only.
 
 **Do NOT inject skip instructions.** Do NOT tell the QA agent to expect failures. Do NOT preemptively excuse any criteria. Expected skips come ONLY from the manifest's `expected-skips` list — never from your judgment. If you are unsure whether a QA gate applies to this boundary, it does.
 
@@ -308,10 +308,10 @@ Invoke `/autoboard:qa-gate` via the Skill tool. The QA prompt is a FIXED TEMPLAT
 #### 4j. Process QA Results (NON-NEGOTIABLE)
 
 - **QA passed:** Proceed to knowledge curation.
-- **QA failed with genuine code failures:** Invoke `/autoboard:qa-fixer` via the Skill tool. Do NOT ask the user — just fix it. The qa-fixer loops internally (fix → re-run QA → fix again) until the gate passes or 10 attempts are exhausted. Never ask the user during this loop.
+- **QA failed with genuine code failures:** Invoke the `/autoboard:qa-fixer` skill. Do NOT ask the user — just fix it. The qa-fixer loops internally (fix → re-run QA → fix again) until the gate passes or 10 attempts are exhausted. Never ask the user during this loop.
 - **Infrastructure failure (verified via allowlist + self-check):** Report to user and block.
 
-**Verification:** After the qa-fixer skill returns, you must have a QA-REPORT with `Result: PASS`. The QA-REPORT is the source of truth — not the fixer's status file, not the fixer's commit message. If the final QA-REPORT says FAIL and the fixer limit is not reached, re-invoke `/autoboard:qa-fixer`. If the qa-fixer returned without reaching PASS or exhausting all 10 attempts, something went wrong — re-invoke it.
+**Verification:** After the qa-fixer skill returns, you must have a QA-REPORT with `Result: PASS`. The QA-REPORT is the source of truth — not the fixer's status file, not the fixer's commit message. If the final QA-REPORT says FAIL and the fixer limit is not reached, re-invoke the `/autoboard:qa-fixer`. If the qa-fixer returned without reaching PASS or exhausting all 10 attempts, something went wrong — re-invoke it.
 
 | Thought that means STOP | Reality |
 |---|---|
@@ -322,7 +322,7 @@ Invoke `/autoboard:qa-gate` via the Skill tool. The QA prompt is a FIXED TEMPLAT
 
 #### 4k. Curate Knowledge (NON-NEGOTIABLE)
 
-Invoke `/autoboard:knowledge` via the Skill tool. Every layer produces knowledge for the next — even single-session layers.
+Invoke the `/autoboard:knowledge` skill. Every layer produces knowledge for the next — even single-session layers.
 
 **Verification:** A file exists at `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md` after this step.
 
@@ -374,7 +374,7 @@ Then immediately proceed to the next layer. Do NOT ask the user if they want to 
 
 ### Step 5: Completion (NON-NEGOTIABLE)
 
-Invoke `/autoboard:completion` via the Skill tool. Completion has TWO quality gates that must both run:
+Invoke the `/autoboard:completion` skill. Completion has TWO quality gates that must both run:
 1. **Full-spectrum coherence audit** — all 13 dimensions, no exclusions, scoped to the entire feature's changes. Catches compound issues and cross-layer drift that per-layer audits missed.
 2. **Final QA gate** — cumulative acceptance criteria from all prior gates + full design doc.
 
@@ -397,7 +397,7 @@ After that, it updates progress, cleans up worktrees, and reports results.
 ## Rules
 
 - **You are the orchestrator, not a session agent.** Do not implement code yourself. Your job is to spawn agents, merge their work, and run QA.
-- **Sessions spawn via `bin/spawn-session.sh`, not the Agent tool.** The Agent tool creates subagents that cannot spawn their own subagents. The shell wrapper creates full main agents with complete tool access.
+- **Sessions spawn via `bin/spawn-session.sh`, not via subagents.** Subagents created that way cannot spawn their own subagents. The shell wrapper creates full main agents with complete tool access.
 - **Merges are sequential.** Never merge two sessions at the same time.
 - **QA runs as a subagent.** Never run browser tests or heavy build validation in your own context.
 - **Report progress.** The user should always know what's happening. Update `progress.md` after every significant event.

@@ -107,7 +107,7 @@ Detect the platform by running `bin/spawn-session.sh --detect-platform` via the 
 
 ### Environment readiness
 
-Invoke `/autoboard:verification --preflight` via the Skill tool to run environment readiness checks. This detects browser tools, checks env vars, creates `.env.local` from templates if needed, and smoke-tests the dev server.
+Invoke the `/autoboard:verification --preflight` skill to run environment readiness checks. This detects browser tools, checks env vars, creates `.env.local` from templates if needed, and smoke-tests the dev server.
 
 After preflight reports, resolve any issues before proceeding:
 
@@ -158,7 +158,7 @@ Only run this if `qa-mode: full` — auth detection only matters for browser smo
 
 **If no auth detected:** Skip. No frontmatter changes needed.
 
-**If auth detected, ask the user** via AskUserQuestion:
+**If auth detected, ask the user:**
 
 > **Auth provider detected: {provider}**
 >

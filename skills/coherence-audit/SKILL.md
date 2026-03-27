@@ -40,7 +40,7 @@ A 1-session layer still gets all core dimensions. Conditional dimensions are sti
 
 ## Run the Audit
 
-Invoke the audit skill in checkpoint mode via the Skill tool:
+Invoke the audit skill in checkpoint mode:
 
 ```
 /autoboard:audit --checkpoint $CHECKPOINT --dimensions {selected dimensions}

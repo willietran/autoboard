@@ -63,7 +63,7 @@ Tell the user which dimensions will be audited and which were skipped (and why).
 
 ## Step 3: Spawn Dimension Agents
 
-Spawn ALL dimension agents in parallel using the Agent tool. Each agent is independent and read-only.
+Spawn ALL dimension agents in parallel as subagents. Each agent is independent and read-only.
 
 **For each selected dimension**, read the full content of its `standards/dimensions/{name}.md` file and include it in the agent prompt.
 

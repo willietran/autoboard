@@ -17,7 +17,7 @@ Before the final QA gate, run a full-spectrum coherence audit across ALL 13 qual
 
 **Do NOT skip this step.** Do NOT substitute with an Explore agent or manual review. Do NOT proceed to the final QA gate without completing this audit. The audit is a prerequisite for the final QA gate — not optional, not skippable, not replaceable.
 
-Invoke `/autoboard:audit --checkpoint {earliest-checkpoint-sha} --dimensions security,error-handling,type-safety,dry-code-reuse,test-quality,config-management,frontend-quality,data-modeling,api-design,observability,performance,code-organization,developer-infrastructure` via the Skill tool.
+Invoke the `/autoboard:audit --checkpoint {earliest-checkpoint-sha} --dimensions security,error-handling,type-safety,dry-code-reuse,test-quality,config-management,frontend-quality,data-modeling,api-design,observability,performance,code-organization,developer-infrastructure` skill.
 
 Use the earliest checkpoint SHA from the run (the commit before Layer 0's merges) to scope the audit to the entire feature's changes.
 
@@ -40,7 +40,7 @@ If no BLOCKING issues, proceed immediately to Step 2. Do not stop here — the a
 
 ## Step 2: Final QA Gate
 
-Always run a final QA gate, even if the last layer already had one. Invoke `/autoboard:qa-gate` via the Skill tool with these additions to the QA subagent brief:
+Always run a final QA gate, even if the last layer already had one. Invoke the `/autoboard:qa-gate` skill with these additions to the QA subagent brief:
 
 - Include the **full design doc** as reference (not just the last layer's criteria)
 - Include **all acceptance criteria from all prior QA gates** (cumulative — the final gate tests everything)

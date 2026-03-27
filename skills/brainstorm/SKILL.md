@@ -63,7 +63,7 @@ digraph brainstorming {
 
 ### 2. Acknowledge & Explore
 - Acknowledge the user's idea with brief collaborative feedback — make them feel heard before diving into process
-- Then explore the **relevant** parts of the codebase using the Agent tool with `subagent_type="Explore"`
+- Then explore the **relevant** parts of the codebase using an Explore subagent
 - Check files, docs, and recent commits related to the described feature
 - If this is a greenfield project with no existing code to integrate with, skip the exploration
 
@@ -156,7 +156,7 @@ Frameworks: {frameworks from design discussion}
 
 ### 7. Spec Review Loop
 After writing the design doc:
-1. Dispatch a spec-document-reviewer subagent via the Agent tool
+1. Dispatch a spec-document-reviewer subagent
 2. The reviewer evaluates: completeness, feasibility, security, edge cases, clarity
 3. Process feedback critically (don't blindly agree)
 4. Update the design doc with accepted changes
@@ -191,7 +191,7 @@ Wait for the user's response. If they request changes, make them and re-run the 
 When the user approves the spec:
 
 1. Tell the user: "Generating task manifest now..."
-2. **Automatically invoke** `/autoboard:task-manifest <slug>` via the Skill tool. Do NOT ask the user to run it manually — chain directly into manifest generation.
+2. **Automatically invoke** the `/autoboard:task-manifest <slug>` skill. Do NOT ask the user to run it manually — chain directly into manifest generation.
 
 ## Key Principles
 - **Design the full scope.** Never suggest MVP phases, scope cuts, or "build this later" deferrals. Autoboard exists to handle ambitious projects — the task-manifest skill handles sequencing and dependency ordering. Your job is to design everything the user described.

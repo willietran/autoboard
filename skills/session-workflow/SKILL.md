@@ -32,7 +32,7 @@ Update this file after: entering each phase, completing each task, encountering 
 
 ## Tracking
 
-If your session brief includes a `## Tracking` section, read the `Provider` field and invoke `/autoboard:tracking-{provider}` via the Skill tool (e.g., `/autoboard:tracking-github`). Follow the "For Session Agents" section of the loaded provider skill. If your brief does NOT have a Tracking section, skip this.
+If your session brief includes a `## Tracking` section, read the `Provider` field and invoke the `/autoboard:tracking-{provider}` skill (e.g., `/autoboard:tracking-github`). Follow the "For Session Agents" section of the loaded provider skill. If your brief does NOT have a Tracking section, skip this.
 
 ## Your Tasks
 
@@ -90,7 +90,7 @@ No implementation before understanding.
 
 Write your implementation plan as a markdown file.
 
-**Do NOT use EnterPlanMode or ExitPlanMode** — these tools require interactive confirmation and do not work in headless mode.
+**Do NOT use plan mode tools (e.g., EnterPlanMode, ExitPlanMode)** — these require interactive confirmation and do not work in headless mode.
 
 The plan must include:
 - Exact file paths and what changes in each
@@ -109,9 +109,9 @@ The plan must include:
 **Update progress file:** Write `Phase: Plan Review` to your progress file.
 **Tracking:** If tracking is active, post a comment that plan review is starting (keep ticket on "Planning").
 
-Invoke `/autoboard:receiving-review` via the Skill tool to load the critical thinking protocol for processing feedback. **After it loads**, immediately dispatch the plan reviewer below — do not stop here.
+Invoke the `/autoboard:receiving-review` skill to load the critical thinking protocol for processing feedback. **After it loads**, immediately dispatch the plan reviewer below — do not stop here.
 
-Dispatch the `autoboard:plan-reviewer` agent via the Agent tool with the `plan-review-model` from your session brief's Configuration section (default: sonnet). Send it the implementation plan and task context from the manifest.
+Dispatch the `autoboard:plan-reviewer` subagent with the `plan-review-model` from your session brief's Configuration section (default: sonnet). Send it the implementation plan and task context from the manifest.
 
 Max 3 review rounds. Push back on incorrect suggestions with technical reasoning.
 
@@ -193,7 +193,7 @@ Independent tasks MAY be executed via parallel subagents at your discretion. **C
 **Update progress file:** Write `Phase: Verifying` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Verifying" and post a phase comment.
 
-Invoke `/autoboard:verification` via the Skill tool to load the verification protocol. **After verification returns**, continue executing the steps below — do not stop here. Verification loading is not a turn boundary.
+Invoke the `/autoboard:verification` skill to load the verification protocol. **After verification returns**, continue executing the steps below — do not stop here. Verification loading is not a turn boundary.
 
 Run the verification command from your session brief. Typically:
 
@@ -218,9 +218,9 @@ All steps must pass. If any fails, diagnose, fix, and re-run ALL commands. Max 3
 **Update progress file:** Write `Phase: Code Review` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Code Review" and post a phase comment.
 
-Invoke `/autoboard:receiving-review` via the Skill tool to load the critical thinking protocol for processing feedback. **After it loads**, immediately dispatch the code reviewer below — do not stop here.
+Invoke the `/autoboard:receiving-review` skill to load the critical thinking protocol for processing feedback. **After it loads**, immediately dispatch the code reviewer below — do not stop here.
 
-Dispatch the `autoboard:code-reviewer` agent via the Agent tool with the `code-review-model` from your session brief's Configuration section (default: sonnet). Send it the full diff (`git diff` output), the approved plan, and relevant context.
+Dispatch the `autoboard:code-reviewer` subagent with the `code-review-model` from your session brief's Configuration section (default: sonnet). Send it the full diff (`git diff` output), the approved plan, and relevant context.
 
 Max 3 review rounds. After implementing fixes, re-run verification (Phase 5) before resubmitting to the reviewer.
 

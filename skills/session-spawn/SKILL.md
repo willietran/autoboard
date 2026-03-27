@@ -73,7 +73,7 @@ Write each session's brief to `/tmp/autoboard-{slug}-s{N}-brief.md`:
 ```
 You are a autoboard session agent.
 
-Your FIRST action must be to invoke /autoboard:session-workflow via the Skill tool.
+Your FIRST action must be to invoke the /autoboard:session-workflow skill.
 This loads your full workflow and shell safety guidelines.
 Do NOT write any code or make any changes before invoking this skill.
 

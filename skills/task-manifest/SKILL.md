@@ -46,7 +46,7 @@ platform: auto                 # auto | claude-code | codex (default: auto — d
 ---
 ```
 
-**`qa-mode`** — ask the user via AskUserQuestion which QA mode they want:
+**`qa-mode`** — ask the user which QA mode they want:
 
 > **QA testing level for this project:**
 > 1. **Full** — Browser integration tests + build/test. QA agents navigate the app, fill forms, verify UI. Requires a browser tool (Playwright MCP or agent-browser) and a dev server. Best for web apps with UI.
@@ -395,7 +395,7 @@ Rules:
 ## Architect Review Loop
 
 After generating the manifest:
-1. Dispatch a critic subagent via the Agent tool (max 3 rounds)
+1. Dispatch a critic subagent (max 3 rounds)
 2. Critic evaluates: completeness, security, DRY, dependency correctness (apply the worktree test to every task — verify its isolated worktree will have everything it needs), explore coverage, performance (algorithmic complexity, I/O patterns), code elegance (clean abstractions, minimal complexity), TDD coverage (are the right tasks marked TDD?), code organization (file structure, module boundaries), debuggability (error handling patterns, informative errors), session grouping (domain cohesion, size caps, no 1:1 anti-pattern, cross-session file independence), **QA gate coverage** (do acceptance criteria cover every user-facing feature from the design doc? Are criteria end-to-end flows, not isolated actions? Would testing these criteria catch a broken dashboard, a failed redirect, or a missing page?), **architectural foundations** (are shared utilities extracted to early-layer foundation tasks? do downstream tasks reference them by path? is test approach specified per task? is security parity flagged across similar endpoints?), and **test scenario coverage** (do key test scenarios cover error paths and edge cases, not just happy paths? are browser-tagged tasks non-exempt from TDD? do scenarios reference the design doc's critical user flows?)
 3. Process feedback critically — push back on wrong suggestions
 4. Update manifest with accepted changes
@@ -410,7 +410,7 @@ Show the user a summary:
 - High-complexity callouts (score >= 5)
 - Any security concerns
 
-Then ask about GitHub Projects tracking (via AskUserQuestion). Present Yes and No as equal options — do NOT mark either as recommended:
+Then ask about GitHub Projects tracking. Present Yes and No as equal options — do NOT mark either as recommended:
 > Would you like to track progress on a GitHub Project board?
 > This creates a kanban board with live status updates as sessions run.
 > Requires the GitHub CLI (`gh`) to be installed and authenticated.
@@ -432,7 +432,7 @@ If no (or default): leave `tracking-provider: none`, no further action.
 
 **Generate environment template** — If the manifest's `env-template` field is set (e.g., `env-template: .env.example`) AND the template file does NOT already exist, generate it NOW before running preflight. Parse the design doc for all environment variables the project needs (API keys, database URLs, third-party credentials, feature flags) and write them as empty placeholders. See [Environment Template](#environment-template) for format and rules. This is YOUR job — do NOT defer to T1 or any session.
 
-Then run a preflight check by invoking `/autoboard:verification --preflight` via the Skill tool. This reads the just-written `manifest.md` for config (env-template, dev-server, etc.), detects available browser tools, and copies `.env.example` to `.env.local` if needed. At this stage, preflight is advisory — it tells the user what to set up but doesn't block.
+Then run a preflight check by invoking the `/autoboard:verification --preflight` skill. This reads the just-written `manifest.md` for config (env-template, dev-server, etc.), detects available browser tools, and copies `.env.example` to `.env.local` if needed. At this stage, preflight is advisory — it tells the user what to set up but doesn't block.
 
 Then prompt:
 > Manifest written to `docs/autoboard/<slug>/manifest.md`.

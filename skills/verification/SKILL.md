@@ -110,7 +110,7 @@ Check for browser tools in this priority order — first match wins:
 |----------|------|-------------------|
 | 2 | agent-browser | `which agent-browser` returns 0 |
 
-**If no browser tool found:** Report **FAIL** — "No browser tool available. qa-mode is 'full' but no browser tool (Playwright MCP or agent-browser) was detected. Install one or switch to qa-mode: build-only." Do NOT ask the user (QA subagents run headless — AskUserQuestion will hang). Do NOT skip browser tests and continue.
+**If no browser tool found:** Report **FAIL** — "No browser tool available. qa-mode is 'full' but no browser tool (Playwright MCP or agent-browser) was detected. Install one or switch to qa-mode: build-only." Do NOT ask the user (QA subagents run headless — user prompts will hang). Do NOT skip browser tests and continue.
 
 ### Step 3: Browser Smoke Tests (qa-mode: full only)
 
@@ -252,7 +252,7 @@ Then read `.env.local` and provision empty variables. Do NOT just report a table
 
 2. **CLI-provisionable vars** — for services with CLIs (managed backends, email providers, etc.):
    - Check the CLI's `--help` for non-interactive flags
-   - If the CLI needs inputs you don't have (team slug, project name, region), ask the user via AskUserQuestion
+   - If the CLI needs inputs you don't have (team slug, project name, region), ask the user
    - If the CLI needs a file that doesn't exist yet (e.g., package.json for a greenfield project), create a temporary one, run the CLI, then clean up the temp file and any generated artifacts
    - Run the command, then verify it wrote the expected values to `.env.local`
    - If it fails, diagnose the error and retry or ask the user for help
@@ -261,11 +261,11 @@ Then read `.env.local` and provision empty variables. Do NOT just report a table
 
 4. After all vars are handled, **re-read `.env.local`** and confirm everything is set. List any that are still empty.
 
-Session agents run non-interactively (`claude -p`) — they cannot answer prompts. All provisioning that requires interaction must happen here in preflight. Do not defer it to session tasks.
+Session agents run non-interactively — they cannot answer prompts. All provisioning that requires interaction must happen here in preflight. Do not defer it to session tasks.
 
 **Convex provisioning** (when NEXT_PUBLIC_CONVEX_URL or CONVEX_DEPLOYMENT is empty):
 
-1. Ask the user for their Convex team slug and project name (or whether to create a new project) via AskUserQuestion
+1. Ask the user for their Convex team slug and project name (or whether to create a new project)
 2. If no `package.json` exists, create a temporary one: `echo '{"name":"temp","private":true}' > package.json`
 3. Run: `npx convex dev --once --configure existing --team <team-slug> --project <project-slug>` (or `--configure new` for new projects)
 4. Verify `.env.local` now contains `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` (or `CONVEX_SITE_URL`)
