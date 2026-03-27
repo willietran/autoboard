@@ -65,6 +65,8 @@ skip-permissions: false        # Skip session permission scoping (default: false
 
 For backward compatibility: `github-project: true` is treated as `tracking-provider: github`.
 
+**Platform field:** `platform: auto | claude-code | codex` (default: `auto`). When `auto`, the platform is detected at runtime via `bin/spawn-session.sh --detect-platform` (checks `CLAUDE_CODE=1`, `CODEX_CI=1`, and `AUTOBOARD_PLATFORM` env vars). When set explicitly, the manifest value overrides auto-detection.
+
 ### Sessions
 
 Each session is marked with `## Session S<N>: <focus>` and contains:
@@ -93,6 +95,17 @@ Build a dependency layer graph from sessions and QA gates:
 ## Step 3: Preflight Checks
 
 Now that the manifest is parsed and config is available, run preflight checks.
+
+### Platform detection
+
+Detect the platform by running `bin/spawn-session.sh --detect-platform` via the Bash tool. This uses the `detect_platform()` function in the spawn script — do NOT reimplement detection logic.
+
+- If the manifest has `platform: claude-code` or `platform: codex`, set `AUTOBOARD_PLATFORM` env var before calling detect to override auto-detection.
+- Display the result in the execution plan: `Platform: codex (auto-detected)` or `Platform: claude-code (from manifest)`.
+- If platform is `codex`, verify `.agents/skills/` exists and contains symlinks. If missing, warn: "Codex skill discovery directory not found — run task-manifest or create .agents/skills/ symlinks."
+- Store the detected platform for use in session-spawn (passed as context in the layer execution).
+
+### Environment readiness
 
 Invoke `/autoboard:verification --preflight` via the Skill tool to run environment readiness checks. This detects browser tools, checks env vars, creates `.env.local` from templates if needed, and smoke-tests the dev server.
 
@@ -202,6 +215,7 @@ Execution Plan:
   Final QA
 
   Total: 6 sessions, 3 layers, 2 QA gates
+  Platform: codex (auto-detected)
   Model: opus | QA: sonnet | Explore: haiku | Plan Review: sonnet | Code Review: sonnet
 ```
 
