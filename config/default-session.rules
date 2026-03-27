@@ -1,0 +1,67 @@
+# Codex Starlark execution policy for spawned session agents.
+# Equivalent deny rules from config/default-session-permissions.json.
+#
+# Strictest matching decision wins — if any rule says "forbidden", the command
+# is blocked regardless of other rules.
+
+# --- Git destructive operations (only the orchestrator pushes/resets) ---
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "forbidden",
+    justification = "Only the orchestrator pushes — session agents commit locally",
+    match = ["git push origin main", "git push -u origin HEAD"],
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Destroys uncommitted work in the worktree",
+    match = ["git reset --hard HEAD", "git reset --hard origin/main"],
+)
+
+prefix_rule(
+    pattern = ["git", "checkout", "."],
+    decision = "forbidden",
+    justification = "Discards all unstaged changes",
+    match = ["git checkout ."],
+)
+
+prefix_rule(
+    pattern = ["git", "restore", "."],
+    decision = "forbidden",
+    justification = "Discards all unstaged changes",
+    match = ["git restore ."],
+)
+
+prefix_rule(
+    pattern = ["git", "clean"],
+    decision = "forbidden",
+    justification = "Deletes untracked files",
+    match = ["git clean -fd", "git clean -fdx"],
+)
+
+# --- System-level access ---
+
+prefix_rule(
+    pattern = ["sudo"],
+    decision = "forbidden",
+    justification = "No system-level access in session agents",
+    match = ["sudo rm -rf /", "sudo apt install"],
+)
+
+# --- Catastrophic deletion ---
+
+prefix_rule(
+    pattern = ["rm", "-rf", "/"],
+    decision = "forbidden",
+    justification = "Catastrophic filesystem deletion",
+    match = ["rm -rf /", "rm -rf /*"],
+)
+
+prefix_rule(
+    pattern = ["rm", "-rf", "~"],
+    decision = "forbidden",
+    justification = "Home directory deletion",
+    match = ["rm -rf ~", "rm -rf ~/"],
+)

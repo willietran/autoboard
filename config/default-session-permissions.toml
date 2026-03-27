@@ -1,0 +1,22 @@
+# Codex permission defaults for spawned session agents.
+#
+# Equivalent of config/default-session-permissions.json (Claude Code format).
+# This file is a reference template — the orchestrator uses it when generating
+# per-project Codex session permissions.
+#
+# Mapping from Claude Code JSON to Codex TOML:
+#   Claude Code "defaultMode: dontAsk"  →  approval_policy = "never"
+#   Claude Code "Bash(*)" allow         →  sandbox_mode = "workspace-write"
+#   Claude Code deny rules              →  Starlark .rules file (see below)
+#   Claude Code "Read(./.env*)" deny    →  Handled by sandbox (protected paths)
+#
+# Note: Codex's sandbox_mode = "workspace-write" already restricts file writes
+# to the working directory. The .rules file handles command-level blocking.
+# Secret file protection (Read(./.env*), Read(./secrets/**)) is handled by
+# Codex's protected paths — .git, .agents, and .codex are read-only by default.
+# For additional secret protection, add paths to sandbox_workspace_write.writable_roots
+# or use a custom .rules file.
+
+[session]
+sandbox_mode = "workspace-write"
+approval_policy = "never"
