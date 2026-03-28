@@ -58,6 +58,7 @@ retries: 5                     # Max retries per session (default: 5, per-sessio
 tracking-provider: github      # Tracking provider: 'github' or 'none' (default: none)
 github-project: false          # Legacy field — equivalent to tracking-provider: github
 qa-mode: build-only            # build-only (default) or full (browser + build/test)
+# browser-tool:                # Set by setup after detecting available tools. Valid: gstack-browse, playwright-mcp, agent-browser, or any CLI/MCP browser tool
 max-parallel: 4                # Max concurrent sessions per layer (default: 4)
 skip-permissions: false        # Skip session permission scoping (default: false)
 ---
@@ -172,7 +173,7 @@ If `qa-mode: full` in the manifest, validate prerequisites:
 
 ```
 qa-mode: full requires:
-  ✓ Browser tool (Playwright MCP or agent-browser) — {detected/MISSING}
+  ✓ Browser tool (gstack browse, Playwright MCP, or agent-browser) — {detected/MISSING}
   ✓ Dev server configured — {configured/MISSING}
   ✓ All non-skipped env vars filled in — {N empty}
 
@@ -182,6 +183,20 @@ first QA gate until you resolve it. No sessions after that gate will execute.
 ```
 
 If prerequisites are missing, ask the user: proceed with `full` (accepting the risk of blocking) or switch to `build-only`?
+
+### Browser tool selection
+
+Only run this if `qa-mode: full`. Read the preflight results for detected browser tools.
+
+- **`browser-tool` already set in manifest:** Skip — user already chose (e.g., from a previous run or manual edit).
+- **0 detected:** Already handled by qa-mode validation (MISSING).
+- **1 detected:** Set `browser-tool: <tool-id>` in the manifest frontmatter automatically. No prompt needed.
+- **>1 detected:** Ask the user via AskUserQuestion which tool QA gates should use. List each detected tool with a brief description:
+  - `gstack-browse` — Fast CLI binary (~100ms/command), persistent daemon, cookie/state persistence
+  - `playwright-mcp` — MCP tool integration, direct LLM tool calls
+  - `agent-browser` — CLI tool, snapshot-based interaction
+
+  Store the user's choice as `browser-tool: <tool-id>` in the manifest frontmatter.
 
 ### Task overlap cleanup
 

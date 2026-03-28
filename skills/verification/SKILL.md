@@ -94,23 +94,24 @@ Run the full [Light Mode](#light-mode) verification loop above. If it fails afte
 
 If `qa-mode: build-only`, stop here after light mode passes. Report the build/test results and exit — no browser testing.
 
-### Step 2: Detect Browser Tools (qa-mode: full only)
+### Step 2: Select Browser Tool (qa-mode: full only)
 
-Check for browser tools in this priority order — first match wins:
+**If `browser-tool` is set in the manifest** → use that tool. The user (or setup skill) already chose it. Verify it's available: for CLI tools, check the binary exists or is on PATH; for MCP tools, check the tools list. If it's not available, report **FAIL** — "browser-tool is set to '{value}' but that tool was not found."
 
-**Phase 1: MCP tools** (check available tools list)
+**If `browser-tool` is not set** → auto-detect available tools. Run all checks, collect the full list:
 
-| Priority | Tool | Look for |
-|----------|------|----------|
-| 1 | Playwright MCP | `mcp__plugin_playwright_playwright__browser_navigate` in available tools |
+| Tool | Detection |
+|------|-----------|
+| gstack browse | `test -x "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/gstack/browse/dist/browse"` (project-local) or `test -x ~/.claude/skills/gstack/browse/dist/browse` (global). |
+| Playwright MCP | `mcp__plugin_playwright_playwright__browser_navigate` in available tools |
+| agent-browser | `which agent-browser` returns 0 |
 
-**Phase 2: CLI tools** (check via Bash if no MCP tool found)
+Then select:
+- Exactly 1 detected → use it.
+- Multiple detected → use whichever you judge best. (The setup skill normally resolves this interactively and stores the choice, but if it wasn't stored, proceed with your judgment.)
+- 0 detected → report **FAIL** — "No browser tool available. qa-mode is 'full' but no browser tool was detected. Install one or switch to qa-mode: build-only." Do NOT ask the user (QA subagents run headless — AskUserQuestion will hang). Do NOT skip browser tests and continue.
 
-| Priority | Tool | Detection command |
-|----------|------|-------------------|
-| 2 | agent-browser | `which agent-browser` returns 0 |
-
-**If no browser tool found:** Report **FAIL** — "No browser tool available. qa-mode is 'full' but no browser tool (Playwright MCP or agent-browser) was detected. Install one or switch to qa-mode: build-only." Do NOT ask the user (QA subagents run headless — AskUserQuestion will hang). Do NOT skip browser tests and continue.
+The auto-detect table covers known tools. If the user sets `browser-tool` to something not in this table, that's fine — verify it exists and learn how to use it from its docs (see [Browser tool usage](#step-3-browser-smoke-tests-qa-mode-full-only)).
 
 ### Step 3: Browser Smoke Tests (qa-mode: full only)
 
@@ -155,29 +156,24 @@ If neither acceptance criteria nor design doc are provided (e.g., session-level 
 
 **Browser tool usage:**
 
-**If using Playwright MCP:**
-   - Navigate: `browser_navigate` tool
-   - Discover elements: `browser_snapshot` tool
-   - Interact: `browser_click`, `browser_fill_form`, `browser_select_option` tools
-   - Check errors: `browser_console_messages` tool
-   - Evidence: `browser_take_screenshot` tool
+   Use the selected browser tool to perform these operations. Learn the tool's specific commands before starting:
+   - **Skill-based tools** (e.g., gstack browse): invoke the tool's skill (e.g., `/browse`) via the Skill tool to load its command reference
+   - **MCP tools** (e.g., Playwright MCP): the tool schemas are already in your tools list — use them directly
+   - **CLI tools**: run `<tool> --help` via Bash to learn available commands
 
-**If using agent-browser (CLI):**
-   - Navigate: `agent-browser open {url}`
-   - Wait for page load: `agent-browser wait --load networkidle`
-   - Discover elements: `agent-browser snapshot -i`
-   - Interact: `agent-browser click @ref`, `agent-browser fill @ref "text"`
-   - Check errors: `agent-browser eval 'JSON.stringify(window.__errors || [])'`
-   - Evidence: `agent-browser screenshot`
-   - **Important:** Refs (`@e1`, `@e2`) are invalidated after page changes — always re-snapshot after navigation or form submission.
+   **Required operations** (every browser tool supports these — find the tool-specific commands):
+   1. Navigate to a URL
+   2. Wait for page load
+   3. Discover interactive elements (snapshot/inspect)
+   4. Interact with elements (click, fill forms, select options)
+   5. Check browser console for errors
+   6. Take screenshots as evidence
 
 10. **CLEANUP — FINALLY BLOCK (mandatory on ALL paths, including failure/error):**
 
    This is a **finally block** — it runs no matter what happened above. Even if tests errored, even if the browser crashed, even if every acceptance criterion failed. Do NOT skip this step for any reason.
 
-   a. Close the browser (ignore errors if close itself fails):
-      - agent-browser: `agent-browser close`
-      - Playwright MCP: `browser_close` tool
+   a. Close/stop the browser tool (ignore errors if close itself fails). Use the tool's shutdown command — e.g., `stop`, `close`, `browser_close`, or equivalent. If the tool runs a persistent daemon or server, ensure it is stopped.
    b. Kill the dev server process.
 
    Browser processes (Chromium) and dev servers persist if not explicitly closed, accumulating across sessions and QA gates. If this agent crashes before reaching this step (OOM, context overflow), the session wrapper's process-group cleanup is the backstop — it kills the entire process tree on exit.
@@ -219,7 +215,7 @@ Verification Results:
 ### What Counts as Infrastructure Failure
 
 Only these qualify as infrastructure failure:
-- Browser tool not detected at all (no Playwright MCP in tools list, `which agent-browser` returns non-zero)
+- No browser tool available (none detected and none configured via `browser-tool` in manifest)
 - Dev server won't start (process exits or never responds to health checks)
 - Missing env vars that prevent the app from running
 
@@ -233,7 +229,7 @@ Environment readiness check. Detects what tools and configuration are available 
 
 ### Step 1: Detect Browser Tools
 
-Use the same two-phase detection from [Full Mode Step 2](#step-2-detect-browser-tools-qa-mode-full-only): check MCP tools → check CLI tools (`which agent-browser`). Report which tool was found and its type (MCP or CLI). Do NOT ask the user — preflight just detects and reports. The orchestrator handles blocking if needed.
+Run the same auto-detection from [Full Mode Step 2](#step-2-select-browser-tool-qa-mode-full-only). Report ALL detected tools and their types. If `browser-tool` is already set in the manifest, note that too. Do NOT ask the user — preflight just detects and reports. The orchestrator handles tool selection and blocking if needed.
 
 ### Step 2: Check Environment Variables
 
@@ -302,7 +298,10 @@ Only run this if a browser tool is available (no point testing the dev server if
 
 ```
 Preflight Results:
-  Browser tool: Playwright MCP (available)
+  Browser tools detected:
+    ✓ gstack browse (~/.claude/skills/gstack/browse/dist/browse)
+    ✗ Playwright MCP (not in available tools)
+    ✗ agent-browser (not found on PATH)
   Environment: .env.local exists but has empty variables:
     - NEXT_PUBLIC_CONVEX_URL (empty)
     - CONVEX_DEPLOY_KEY (empty)
@@ -313,10 +312,13 @@ Preflight Results:
   Dev server: not tested (setup failed)
 ```
 
-Or when fully ready:
+Or when fully ready with multiple tools:
 ```
 Preflight Results:
-  Browser tool: Playwright MCP (available)
+  Browser tools detected:
+    ✓ gstack browse (~/.claude/skills/gstack/browse/dist/browse)
+    ✓ Playwright MCP (available)
+    ✗ agent-browser (not found on PATH)
   Environment: .env.local configured (all variables set)
   Setup: OK (npx convex dev --once)
   Test baseline: clean (all tests pass)
@@ -328,10 +330,10 @@ Environment is ready for full E2E QA.
 Or minimal:
 ```
 Preflight Results:
-  Browser tool: none detected
+  Browser tools detected: none
   Environment: no env-template configured (skipped)
   Setup: not configured (skipped)
   Dev server: not tested (no browser tool)
 
-QA will run build/test commands only. Install a browser MCP plugin for browser smoke tests.
+QA will run build/test commands only. Install gstack browse, Playwright MCP, or agent-browser for browser smoke tests.
 ```
