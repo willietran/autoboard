@@ -218,14 +218,16 @@ One session = one agent = one worktree = sequential execution. There is no paral
 
 #### Session Table Format
 
-The sessions table must show task complexities, total, and a domain label:
+The sessions table must show task complexities, total, domain label, and effort level:
 
 ```markdown
-| Session | Tasks | Complexity | Domain | Rationale |
-|---------|-------|-----------|--------|-----------|
-| S1 | T1 (2), T2 (3) | 5 | Data layer | Sequential chain, shared types context |
-| S2 | T3 (4) | 4 | Auth | Standalone — complexity 4 + TDD, domain-isolated |
+| Session | Tasks | Complexity | Domain | Effort | Rationale |
+|---------|-------|-----------|--------|--------|-----------|
+| S1 | T1 (2), T2 (3) | 5 | Data layer | high | Sequential chain, max task complexity 5 |
+| S2 | T3 (4) | 4 | Auth | medium | Standalone — complexity 4 + TDD, domain-isolated |
 ```
+
+**Effort auto-assignment:** Default effort is `medium`. Sessions with max task complexity 4-5 get auto-bumped to `high`. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
 
 ### Architectural Foundations
 

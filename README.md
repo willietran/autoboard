@@ -71,6 +71,7 @@ The feature branch is ready for PR when done.
 
 ### Configuration
 - **Configurable models** — Different models per role (sessions, reviewers, exploration)
+- **Effort levels** — Control reasoning depth per session (`low`, `medium`, `high`, `max`); auto-bumped to `high` for complexity 4-5 sessions
 - **13 quality dimensions** — Security, test quality, DRY, performance, and more — tuned per-project and enforced by reviewers
 - **GitHub Projects** — Optional kanban board with live status updates
 

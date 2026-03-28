@@ -10,17 +10,19 @@ set -euo pipefail
 # the entire group (claude + MCP servers + dev servers). Writes a PID file with
 # start time for the orchestrator's stale-process reaper.
 #
-# Usage: spawn-session.sh <brief-file> --model <model> --cwd <worktree-path> [--skip-permissions]
+# Usage: spawn-session.sh <brief-file> --model <model> --cwd <worktree-path>
+#        [--effort <low|medium|high|max>] [--skip-permissions]
 #        [--standards <file>] [--test-baseline <file>]
 
 PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 BRIEF_FILE="" MODEL="" CWD="." SKIP_PERMISSIONS=false SETTINGS_FILE=""
-STANDARDS_FILE="" TEST_BASELINE_FILE=""
+STANDARDS_FILE="" TEST_BASELINE_FILE="" EFFORT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --model) MODEL="$2"; shift 2 ;;
     --cwd)   CWD="$2";   shift 2 ;;
+    --effort) EFFORT="$2"; shift 2 ;;
     --skip-permissions) SKIP_PERMISSIONS=true; shift ;;
     --settings) SETTINGS_FILE="$2"; shift 2 ;;
     --standards) STANDARDS_FILE="$2"; shift 2 ;;
@@ -29,7 +31,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -z "$BRIEF_FILE" ]] && { echo "Usage: spawn-session.sh <brief-file> --model <model> --cwd <path> [--skip-permissions]" >&2; exit 1; }
+[[ -z "$BRIEF_FILE" ]] && { echo "Usage: spawn-session.sh <brief-file> --model <model> --cwd <path> [--effort <level>] [--skip-permissions]" >&2; exit 1; }
 [[ ! -f "$BRIEF_FILE" ]] && { echo "Brief file not found: $BRIEF_FILE" >&2; exit 1; }
 
 # Map model aliases to full model IDs
@@ -39,6 +41,14 @@ case "${MODEL:-opus}" in
   haiku)  MODEL_ID="claude-haiku-4-5-20251001" ;;
   *)      MODEL_ID="$MODEL" ;;
 esac
+
+# Validate effort level
+if [[ -n "$EFFORT" ]]; then
+  case "$EFFORT" in
+    low|medium|high|max) ;; # valid
+    *) echo "ERROR: Invalid effort level '$EFFORT'. Valid: low, medium, high, max" >&2; exit 1 ;;
+  esac
+fi
 
 # Build prompt: brief + mechanically appended standards/baseline files
 # These files are appended here (not by the orchestrator) to prevent LLM summarization
@@ -66,6 +76,10 @@ ARGS=(
   --output-format stream-json
   --verbose
 )
+# Effort: omit for medium (default), pass for others
+if [[ -n "$EFFORT" && "$EFFORT" != "medium" ]]; then
+  ARGS+=(--effort "$EFFORT")
+fi
 if [[ "$SKIP_PERMISSIONS" == "true" ]]; then
   ARGS+=(--dangerously-skip-permissions)
 elif [[ -n "$SETTINGS_FILE" ]]; then

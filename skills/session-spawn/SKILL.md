@@ -142,6 +142,7 @@ Spawn all sessions in the layer as **parallel background Bash commands** in a si
 ```bash
 bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
+  --effort {effort from sessions table, or omit if not specified} \
   --cwd /tmp/autoboard-{slug}-s{N} \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
@@ -149,10 +150,13 @@ bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
+**Effort level:** Read the `Effort` column from the sessions table in the manifest. If the session has an effort level (e.g., `high`, `max`), pass `--effort {level}` to the spawn script. If no Effort column exists (backward compatibility with older manifests), omit the `--effort` flag — the spawn script defaults to `medium`.
+
 If the manifest has `skip-permissions: true`, use `--skip-permissions` instead of `--settings`:
 ```bash
 bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
+  --effort {effort from sessions table, or omit if not specified} \
   --cwd /tmp/autoboard-{slug}-s{N} \
   --skip-permissions \
   --standards "docs/autoboard/{slug}/standards.md" \
@@ -160,7 +164,7 @@ bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
-Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
+Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, effort level mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
 
 **Do NOT paste standards or test-baseline content into the brief.** The shell script appends these files mechanically via `--standards` and `--test-baseline` flags. If the files don't exist, the script silently skips them.
 
