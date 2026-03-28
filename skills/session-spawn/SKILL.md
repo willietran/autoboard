@@ -142,7 +142,7 @@ Spawn all sessions in the layer as **parallel background Bash commands** in a si
 ```bash
 bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
-  --effort {effort from sessions table, or omit if not specified} \
+  --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
@@ -150,13 +150,13 @@ bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
-**Effort level:** Read the `Effort` column from the sessions table in the manifest. If the session has an effort level (e.g., `high`, `max`), pass `--effort {level}` to the spawn script. If no Effort column exists (backward compatibility with older manifests), omit the `--effort` flag — the spawn script defaults to `medium`.
+**Effort level:** Read the `Effort` column from the sessions table in the manifest and pass `--effort {level}` to the spawn script. The shell script handles the mapping — `medium` is the default and gets omitted from the `claude` invocation.
 
 If the manifest has `skip-permissions: true`, use `--skip-permissions` instead of `--settings`:
 ```bash
 bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
-  --effort {effort from sessions table, or omit if not specified} \
+  --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \
   --skip-permissions \
   --standards "docs/autoboard/{slug}/standards.md" \
