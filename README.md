@@ -1,10 +1,12 @@
 # Autoboard
 
-Agentic orchestrator for Claude Code. Breaks ambitious features into focused agent sessions, each with clean context and rigorous process gates. Independent sessions run in isolated git worktrees; Claude Code coordinates spawning, merging, and QA. 
+Agentic orchestrator for Claude Code and Codex. Breaks ambitious features into focused agent sessions, each with clean context and rigorous process gates. Independent sessions run in isolated git worktrees while Autoboard coordinates spawning, merging, and QA.
 
 Give Autoboard an idea, go to sleep, wake up to a fully QA'd, tested, and thoroughly code-reviewed app.
 
 ## Installation
+
+### Claude Code
 
 Add the marketplace and install:
 
@@ -13,13 +15,55 @@ Add the marketplace and install:
 /plugin install autoboard@thelittlebyte
 ```
 
+### Codex
+
+For a home-local Codex install, register this repo as a local plugin:
+
+```bash
+mkdir -p ~/.agents/plugins ~/plugins
+ln -sfn /path/to/autoboard ~/plugins/autoboard
+```
+
+Create `~/.agents/plugins/marketplace.json`:
+
+```json
+{
+  "name": "local",
+  "interface": {
+    "displayName": "Local Plugins"
+  },
+  "plugins": [
+    {
+      "name": "autoboard",
+      "source": {
+        "source": "local",
+        "path": "./plugins/autoboard"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Coding"
+    }
+  ]
+}
+```
+
+Autoboard's Codex manifest lives at `.codex-plugin/plugin.json`, and Codex discovers the shared skills via the committed symlinks in `.agents/skills/`.
+
+To verify the install, open this repo in Codex and confirm the `Autoboard` plugin appears in the plugin catalog and that prompts like `/autoboard:brainstorm` are available.
+
 ### Development
+
+For Claude Code development, point the CLI at the repo with `--plugin-dir`:
 
 To work on autoboard itself, clone the repo and use the `--plugin-dir` flag:
 
 ```bash
 alias claude="claude --plugin-dir /path/to/autoboard"
 ```
+
+For Codex development, keep `~/plugins/autoboard` as a symlink to your checkout so manifest and skill changes are reflected immediately.
 
 ## Workflow
 
@@ -45,7 +89,7 @@ Generates a task manifest from the design doc — sessions with dependency graph
 /autoboard:run <project>
 ```
 
-Launches the orchestrator. Spawns parallel session agents via `claude -p` in isolated git worktrees. Each session follows a mandatory workflow:
+Launches the orchestrator. Spawns parallel session agents via `claude -p` or `codex exec` in isolated git worktrees. Each session follows a mandatory workflow:
 
 **Explore** &rarr; **Plan** &rarr; **Plan Review** &rarr; **Implement** &rarr; **Verify** &rarr; **Code Review** &rarr; **Commit**
 

@@ -1,7 +1,7 @@
 {
   "name": "@thelittlebyte/autoboard",
   "version": "0.1.3",
-  "description": "AI-driven development orchestrator for Claude Code",
+  "description": "AI-driven development orchestrator for Claude Code and Codex",
   "homepage": "https://github.com/willietran/autoboard",
   "repository": {
     "type": "git",
@@ -9,9 +9,10 @@
   },
   "author": "Willie Tran",
   "license": "MIT",
-  "keywords": ["claude-code", "plugin", "orchestrator", "agent", "autoboard"],
+  "keywords": ["claude-code", "codex", "plugin", "orchestrator", "agent", "autoboard"],
   "files": [
     ".claude-plugin/",
+    ".codex-plugin/",
     "bin/",
     "config/",
     "standards/",

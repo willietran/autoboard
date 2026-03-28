@@ -1,0 +1,41 @@
+{
+  "name": "autoboard",
+  "version": "0.1.3",
+  "description": "AI-driven development orchestrator for Claude Code and Codex",
+  "author": {
+    "name": "Willie Tran",
+    "url": "https://github.com/willietran"
+  },
+  "homepage": "https://github.com/willietran/autoboard",
+  "repository": "https://github.com/willietran/autoboard",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "claude-code",
+    "plugin",
+    "orchestrator",
+    "agent",
+    "autoboard"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Autoboard",
+    "shortDescription": "Orchestrate parallel coding sessions with review and QA gates",
+    "longDescription": "Autoboard is an AI engineering lead for Claude Code and Codex. It breaks ambitious features into focused sessions, runs them in isolated worktrees, enforces review gates, and validates the integrated result with QA and coherence checks.",
+    "developerName": "Willie Tran",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/willietran/autoboard",
+    "privacyPolicyURL": "https://github.com/willietran/autoboard",
+    "termsOfServiceURL": "https://github.com/willietran/autoboard",
+    "defaultPrompt": [
+      "Use Autoboard to design a feature with /autoboard:brainstorm",
+      "Turn a design doc into a manifest with /autoboard:task-manifest",
+      "Run a manifest end to end with /autoboard:run"
+    ],
+    "brandColor": "#1F6FEB"
+  }
+}

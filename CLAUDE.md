@@ -2,9 +2,9 @@
 
 An AI engineering lead that manages a team of coding AIs so they don't cut corners.
 
-Autoboard is a Claude Code plugin that decomposes features into parallel coding sessions, each with mandatory review gates, then validates the integrated result with cross-session quality audits — catching the problems that no individual session could see. The orchestrator exercises judgment: it arbitrates review disputes, curates cross-session knowledge, validates QA claims, and diagnoses failures before deciding how to respond.
+Autoboard is a Claude Code and Codex plugin that decomposes features into parallel coding sessions, each with mandatory review gates, then validates the integrated result with cross-session quality audits — catching the problems that no individual session could see. The orchestrator exercises judgment: it arbitrates review disputes, curates cross-session knowledge, validates QA claims, and diagnoses failures before deciding how to respond.
 
-**Architecture:** Skills-only plugin with a thin shell wrapper (`bin/spawn-session.sh`). The Main Agent (Claude Code) is the orchestrator — the engineering lead. It reads a manifest, spawns session agents via `claude -p` subprocesses, merges results, and runs QA gates. Sessions are full main agents with complete tool access, so they can spawn Explore subagents, plan reviewers, and code reviewers.
+**Architecture:** Skills-only plugin with a thin shell wrapper (`bin/spawn-session.sh`). The Main Agent is the orchestrator — the engineering lead. It reads a manifest, spawns session agents via `claude -p` or `codex exec`, merges results, and runs QA gates. Sessions are full main agents with complete tool access, so they can spawn Explore subagents, plan reviewers, and code reviewers.
 
 ## How It Works
 
@@ -17,6 +17,8 @@ Autoboard is a Claude Code plugin that decomposes features into parallel coding 
 
 ## Installation
 
+### Claude Code
+
 Add the marketplace and install:
 
 ```
@@ -24,9 +26,13 @@ Add the marketplace and install:
 /plugin install autoboard@thelittlebyte
 ```
 
+### Codex
+
+For a home-local Codex install, symlink the repo into `~/plugins/autoboard` and add an `autoboard` entry to `~/.agents/plugins/marketplace.json` pointing to `./plugins/autoboard`. Codex will load the manifest from `.codex-plugin/plugin.json` and discover shared skills from `.agents/skills/`.
+
 ### Development
 
-For working on autoboard itself, use the `--plugin-dir` flag:
+For working on autoboard itself in Claude Code, use the `--plugin-dir` flag:
 
 ```bash
 alias claude="claude --plugin-dir /path/to/autoboard"
@@ -34,11 +40,14 @@ alias claude="claude --plugin-dir /path/to/autoboard"
 
 Changes to the repo are instantly reflected — no copying needed.
 
+For Codex, keep `~/plugins/autoboard` as a symlink to the repo so the local plugin reflects live changes.
+
 ## Repository Structure
 
 Conventions — don't enumerate every file, just know where to look:
 
-- **`.claude-plugin/plugin.json`** — Plugin manifest
+- **`.claude-plugin/plugin.json`** — Claude Code plugin manifest
+- **`.codex-plugin/plugin.json`** — Codex plugin manifest
 - **`bin/spawn-session.sh`** — Thin wrapper around `claude -p` for spawning session agents
 - **`config/default-session-permissions.json`** — Default allow/deny rules for session agents
 - **`standards/dimensions/<name>.md`** — One file per quality dimension (see `standards/README.md`)
@@ -69,7 +78,7 @@ Conventions — don't enumerate every file, just know where to look:
 
 ## Architecture
 
-**Main Agent = Orchestrator.** It reads a manifest, spawns session agents via `claude -p`, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use CLI subprocesses (`claude -p` or `codex exec`) rather than subagents because session agents need to spawn their own subagents — a platform constraint.
+**Main Agent = Orchestrator.** It reads a manifest, spawns session agents via `claude -p` or `codex exec`, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use CLI subprocesses rather than subagents because session agents need to spawn their own subagents — a platform constraint.
 
 | Orchestrator does | Session Agent does |
 |---|---|
