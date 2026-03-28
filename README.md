@@ -1,7 +1,7 @@
 # Autoboard
 Autoboard is a strict eng lead whose sole job is to make sure your Claude Code Agent writes clean and functioning code. 
 
-You come to Autoboard with am ambitious plan, and it'll break it down into manageable chunks (to fight context rot), dispatch isolated session agents, and identify key integration layers where the orchestrator will QA your app for you to make sure it actually works and run a thorough independent audit to identify and then fix AI slop code. 
+You come to Autoboard with am ambitious idea, and it'll break it down into manageable chunks, dispatch isolated session agents, and identify key integration layers to manage QA to make sure it actually works and run a thorough independent audit to identify and then fix any slop. 
 
 This process is designed to prevent future agents from building upon a broken foundation and prevents tech debt from piling up while also protecting your agent's context window to prevent it from entering the "stupid zone" (aka context rot). Autoboard is essentially the Toyota Production System applied to agentic eng orchestration.
 
