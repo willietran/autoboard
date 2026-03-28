@@ -1,8 +1,10 @@
 # Autoboard
+Give Autoboard an idea, go to sleep, wake up to a fully functioning app with clean code.
 
-Agentic orchestrator for Claude Code. Breaks ambitious features into focused agent sessions, each with clean context and rigorous process gates. Independent sessions run in isolated git worktrees; Claude Code coordinates spawning, merging, and QA. 
+Autoboard is essentially the Toyota Production System applied to Agentic Engineering. You come to Autoboard with am ambitious plan, and it'll break it down into manageable chunks (to fight context rot), dispatch isolated session agents, and identify key integration layers where the orchestrator will QA your app for you to make sure it actually works and run a thorough independent audit to identify and then fix AI slop code.
 
-Give Autoboard an idea, go to sleep, wake up to a fully QA'd, tested, and thoroughly code-reviewed app.
+This process is designed to prevent future agents from building upon a broken foundation and prevents tech debt from piling up while also protecting your agent's context window to prevent it from entering the "stupid zone" (aka context rot).
+
 
 ## Installation
 
