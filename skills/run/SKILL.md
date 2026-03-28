@@ -374,7 +374,7 @@ Update `docs/autoboard/{slug}/progress.md` after every significant event:
 Updated: {ISO timestamp}
 ```
 
-Then immediately proceed to the next layer. Do NOT ask the user if they want to continue.
+**Then immediately proceed to the next layer.** Do NOT ask the user if they want to continue. Do NOT ask "shall I proceed?" or "want to review anything first?" Do NOT pause for confirmation between layers — not after merges, not after coherence fixers, not after QA gates, not after progress reports. The only acceptable stopping points are listed at the top of this document. Everything else: just do it.
 
 ### Step 5: Completion (NON-NEGOTIABLE)
 
@@ -427,4 +427,5 @@ These are real failure modes observed in production runs. If you catch yourself 
 | Build briefs manually instead of using skill | Missing sections (standards, test baseline, knowledge). Session agents fail or produce lower quality. |
 | Skip knowledge curation | Next layer's sessions lack context. They rebuild utilities that exist, use wrong patterns, miss conventions. |
 | Tell QA "backend isn't available" | If preflight provisioned it, it IS available. Run setup. The claim is false. |
+| Ask the user before proceeding to the next layer | "Shall I continue?" "Want to review?" — NO. The run is autonomous. Proceed immediately. The only acceptable stopping points are listed at the top of this document. |
 | Stop after a skill returns (setup, tracking, audit, etc.) | Skills are intermediate steps, not turn boundaries. Every skill invocation returns to YOU — the orchestrator. Act on the result and continue to the next step. The only acceptable stopping points are listed at the top of this document. |
