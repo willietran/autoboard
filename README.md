@@ -55,7 +55,7 @@ To verify the install, open this repo in Codex and confirm the `Autoboard` plugi
 
 ### Development
 
-For Claude Code development, point the CLI at the repo with `--plugin-dir`:
+To work on autoboard itself in Claude Code, clone the repo and use the `--plugin-dir` flag:
 
 ```bash
 alias claude="claude --plugin-dir /path/to/autoboard"
