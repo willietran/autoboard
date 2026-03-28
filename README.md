@@ -17,39 +17,9 @@ Add the marketplace and install:
 
 ### Codex
 
-Register Autoboard as a local plugin:
+Tell Codex:
 
-```bash
-mkdir -p ~/.agents/plugins ~/plugins
-ln -sfn /path/to/autoboard ~/plugins/autoboard
-```
-
-Create `~/.agents/plugins/marketplace.json`:
-
-```json
-{
-  "name": "local",
-  "interface": {
-    "displayName": "Local Plugins"
-  },
-  "plugins": [
-    {
-      "name": "autoboard",
-      "source": {
-        "source": "local",
-        "path": "./plugins/autoboard"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Coding"
-    }
-  ]
-}
-```
-
-Verify the install by opening the repo in Codex and confirming `/autoboard:brainstorm` is available.
+> Fetch and follow instructions from https://raw.githubusercontent.com/willietran/autoboard/main/.codex/INSTALL.md
 
 ### Development
 
@@ -59,7 +29,10 @@ Verify the install by opening the repo in Codex and confirming `/autoboard:brain
 alias claude="claude --plugin-dir /path/to/autoboard"
 ```
 
-**Codex:** Keep `~/plugins/autoboard` as a symlink to your checkout — changes are reflected immediately.
+**Codex:** Symlink your checkout for live changes:
+```bash
+ln -sfn /path/to/autoboard/skills ~/.agents/skills/autoboard
+```
 
 ## Workflow
 
