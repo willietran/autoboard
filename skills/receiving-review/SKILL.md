@@ -46,11 +46,9 @@ Implement accepted changes one item at a time. Test after each change. Do not ba
 
 - The reviewer misread the code or missed relevant context.
 - The suggested fix would break something else.
-- The concern is theoretical with no practical risk in this context.
+- The concern is theoretical with no practical risk in this context. (Note: agent-navigability risk IS practical risk — if the next AI session will be confused or misled, that's not theoretical. See the audit section below.)
 - The feedback conflicts with project conventions or constraints.
-- The fix is out of scope for the current task.
-
-**Scope caveat:** "Out of scope" and "pre-existing" apply to session-scoped reviews (code review, plan review). They do NOT apply to codebase-scoped reviews (coherence audits, full audits). See the next section.
+- The fix is out of scope for the current task. **This does NOT apply to audit or coherence findings** — audits evaluate codebase health, not session scope. See the next section.
 
 State your reasoning clearly and concisely. Cite specific lines, tests, or constraints. Let the technical argument stand on its own.
 
@@ -78,6 +76,12 @@ These categories are BLOCKING regardless of when they were introduced:
 - **Unclear module boundaries** — same responsibility split across unrelated files
 
 The test: "If a new AI session reads this code, will it know which pattern to follow?" If the answer is no, it's BLOCKING.
+
+**Invalid dismissals for agent-degrading findings:**
+- "This is theoretical / no practical risk" — Agent navigability IS practical. If the next session greps for a utility and finds three competing versions, that's a concrete problem, not a theoretical one.
+- "This doesn't break the app" — The blocking threshold includes agent-degrading, not just app-breaking. A DRY violation that compiles fine still blocks if the next session will copy the wrong implementation.
+- "This is a style/organization preference" — Module boundaries, file organization, and naming consistency are not style preferences when they determine whether an AI session can navigate the codebase. Do not reclassify these as cosmetic.
+- "This is out of scope / pre-existing" — Audits are codebase-scoped. There is no "out of scope." For pre-existing, you must prove the issue is NOT agent-degrading to downgrade it.
 
 ### What you CAN still push back on
 
