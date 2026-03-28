@@ -17,7 +17,7 @@ Add the marketplace and install:
 
 ### Codex
 
-For a home-local Codex install, register this repo as a local plugin:
+Register Autoboard as a local plugin:
 
 ```bash
 mkdir -p ~/.agents/plugins ~/plugins
@@ -49,19 +49,17 @@ Create `~/.agents/plugins/marketplace.json`:
 }
 ```
 
-Autoboard's Codex manifest lives at `.codex-plugin/plugin.json`, and Codex discovers the shared skills via the committed symlinks in `.agents/skills/`.
-
-To verify the install, open this repo in Codex and confirm the `Autoboard` plugin appears in the plugin catalog and that prompts like `/autoboard:brainstorm` are available.
+Verify the install by opening the repo in Codex and confirming `/autoboard:brainstorm` is available.
 
 ### Development
 
-To work on autoboard itself in Claude Code, clone the repo and use the `--plugin-dir` flag:
+**Claude Code:** Clone the repo and use `--plugin-dir`:
 
 ```bash
 alias claude="claude --plugin-dir /path/to/autoboard"
 ```
 
-For Codex development, keep `~/plugins/autoboard` as a symlink to your checkout so manifest and skill changes are reflected immediately.
+**Codex:** Keep `~/plugins/autoboard` as a symlink to your checkout — changes are reflected immediately.
 
 ## Workflow
 
@@ -87,7 +85,7 @@ Generates a task manifest from the design doc — sessions with dependency graph
 /autoboard:run <project>
 ```
 
-Launches the orchestrator. Spawns parallel session agents via `claude -p` or `codex exec` in isolated git worktrees. Each session follows a mandatory workflow:
+Launches the orchestrator. Spawns parallel session agents in isolated git worktrees. Each session follows a mandatory workflow:
 
 **Explore** &rarr; **Plan** &rarr; **Plan Review** &rarr; **Implement** &rarr; **Verify** &rarr; **Code Review** &rarr; **Commit**
 
@@ -99,6 +97,7 @@ The feature branch is ready for PR when done.
 - **Parallel multi-agent scheduling** — Sessions run concurrently in dependency-aware layers; upstream work completes before downstream sessions start
 - **Isolated sessions** — Each agent works in its own git worktree with scoped permissions; squash-merged as one commit
 - **Resumable runs** — Detects completed sessions and picks up where it left off if the orchestrator crashes
+- **Cross-platform** — Works on Claude Code (`claude -p`) and Codex (`codex exec`) with automatic platform detection
 
 ### Quality Gates
 - **Mandatory review gates** — Plan review and code review subagents run before any merge
@@ -113,6 +112,7 @@ The feature branch is ready for PR when done.
 
 ### Configuration
 - **Configurable models** — Different models per role (sessions, reviewers, exploration)
+- **Effort levels** — Control reasoning depth per session (`low`, `medium`, `high`, `max`)
 - **13 quality dimensions** — Security, test quality, DRY, performance, and more — tuned per-project and enforced by reviewers
 - **GitHub Projects** — Optional kanban board with live status updates
 
