@@ -109,11 +109,11 @@ The plan must include:
 **Update progress file:** Write `Phase: Plan Review` to your progress file.
 **Tracking:** If tracking is active, post a comment that plan review is starting (keep ticket on "Planning").
 
-Invoke `/autoboard:receiving-review` via the Skill tool to load the critical thinking protocol for processing feedback. **After it loads**, immediately dispatch the plan reviewer below — do not stop here.
+**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this — the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below — do not stop here.
 
 Dispatch the `autoboard:plan-reviewer` agent via the Agent tool with the `plan-review-model` from your session brief's Configuration section (default: sonnet). Send it the implementation plan and task context from the manifest.
 
-Max 3 review rounds. Push back on incorrect suggestions with technical reasoning.
+Max 3 review rounds. Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree.
 
 **Do NOT proceed to implementation with unresolved BLOCKING issues.**
 
@@ -218,11 +218,11 @@ All steps must pass. If any fails, diagnose, fix, and re-run ALL commands. Max 3
 **Update progress file:** Write `Phase: Code Review` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Code Review" and post a phase comment.
 
-Invoke `/autoboard:receiving-review` via the Skill tool to load the critical thinking protocol for processing feedback. **After it loads**, immediately dispatch the code reviewer below — do not stop here.
+**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this — the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below — do not stop here.
 
 Dispatch the `autoboard:code-reviewer` agent via the Agent tool with the `code-review-model` from your session brief's Configuration section (default: sonnet). Send it the full diff (`git diff` output), the approved plan, and relevant context.
 
-Max 3 review rounds. After implementing fixes, re-run verification (Phase 5) before resubmitting to the reviewer.
+Max 3 review rounds. Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree. After implementing fixes, re-run verification (Phase 5) before resubmitting to the reviewer.
 
 **If 3 rounds complete with unresolved BLOCKING issues:** Escalate to the orchestrator. Do NOT silently proceed with unresolved issues. Do NOT hang waiting for user input.
 

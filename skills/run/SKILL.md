@@ -274,10 +274,11 @@ Invoke `/autoboard:coherence-audit` via the Skill tool. This skill invokes `/aut
 
 #### 4h. Process Coherence Results (NON-NEGOTIABLE)
 
-Invoke `/autoboard:receiving-review` to critically evaluate each audit finding before acting.
-Apply the decision tree to each finding: verify factual accuracy, then check whether fixing would cause demonstrable harm. The only valid dismissals are: factually wrong, fix breaks something, conflicts with documented design decision, destabilizes other sessions, or assigned to another session in the manifest. "Low risk," "technically works," and "out of scope" are NOT valid dismissals — completeness costs seconds for AI.
+**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE evaluating ANY finding. Do NOT read the findings and start evaluating them yourself. Do NOT "apply the decision tree from memory." The skill must be loaded first — it contains the authoritative decision tree and forbidden dismissals. Any evaluation performed without loading this skill first is invalid.
 
-Log each dismissed finding (with its proven-harm justification) to progress.md.
+**Verification:** The Skill tool was called with `receiving-review` before any finding was evaluated. If you catch yourself evaluating findings without having invoked the skill, STOP and invoke it now.
+
+After the skill loads, apply its decision tree to each finding. Log each dismissed finding (with its proven-harm justification) to progress.md.
 
 After evaluation:
 - **No findings survive pre-screening:** Proceed to QA gate or knowledge curation.
@@ -285,6 +286,8 @@ After evaluation:
 
 | Thought that means STOP | Reality |
 |---|---|
+| "I already know how to evaluate findings" | You don't have the decision tree loaded. Invoke the skill. Every time. |
+| "I'll just quickly check these before loading the skill" | That's how you end up dismissing 17 findings with banned rationalizations. Load the skill FIRST. |
 | "I'll just dismiss everything so I don't have to run the fixer" | Each dismissal requires proven harm — not "low risk" or "technically works." Lazy bulk dismissals are not critical thinking. |
 | "These INFO items aren't worth a fixer" | Completeness costs seconds. Unfixed findings compound. Dispatch the fixer. |
 | "I can fix this quickly myself" | You are the orchestrator, not a session agent. Dispatch the fixer with the full session workflow. |
@@ -418,6 +421,7 @@ These are real failure modes observed in production runs. If you catch yourself 
 | Skip the setup command | Backend has no schema. Every QA gate fails. Every fixer fails. All sessions wasted. |
 | Use Explore instead of audit skill | Quick scan misses convention drift, DRY violations, security gaps. Compound issues propagate to later layers. |
 | Inject skip instructions into QA prompt | QA agent skips valid tests. Features ship untested. User discovers bugs in production. |
+| Evaluate audit findings without loading receiving-review skill | You dismiss everything with banned rationalizations. The skill contains the authoritative decision tree. Load it first. |
 | Dismiss findings without proven harm | Real issues propagate. Later layers build on broken foundations. The fixer never runs. |
 | Skip audits for single-session layers | Cross-layer issues go undetected. Architecture drifts from prior layers. |
 | Build briefs manually instead of using skill | Missing sections (standards, test baseline, knowledge). Session agents fail or produce lower quality. |
