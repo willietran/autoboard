@@ -7,9 +7,11 @@ description: Critical thinking protocol for processing review feedback — invok
 
 # Receiving Review Feedback
 
-When you receive review feedback, process it methodically. Do not rush to agree. Do not perform agreement. Think critically about every item.
+**Default: fix everything.** The only valid escape is proven harm.
 
-## The Pattern: READ -> UNDERSTAND -> VERIFY -> EVALUATE -> RESPOND -> IMPLEMENT
+AI agents can fix a DRY violation in 30 seconds, export an interface in 10, add a test in 2 minutes. The cost of completeness is near-zero. The cost of leaving issues is compounding — every unfixed finding is a pattern the next session copies, a convention it drifts from, a shortcut it repeats. Do not evaluate whether feedback is "worth fixing." Evaluate whether fixing it would cause harm.
+
+## The Process
 
 ### 1. READ
 Read the full review before responding to any single item. Understand the reviewer's overall perspective and priorities.
@@ -17,76 +19,66 @@ Read the full review before responding to any single item. Understand the review
 ### 2. UNDERSTAND
 For each item, make sure you understand what the reviewer is actually asking for. If unclear, ask a clarifying question before acting.
 
-### 3. VERIFY
-Check the reviewer's claims against the actual code. Reviewers make mistakes too -- wrong line numbers, outdated context, misread logic. Verify before accepting.
+### 3. VERIFY and DECIDE
 
-### 4. EVALUATE
-For each item, decide independently:
-- Is the feedback correct and actionable?
-- Is it based on accurate understanding of the code?
-- Does the suggested fix introduce new problems?
-- Is the severity (BLOCKING vs NIT) appropriate?
+For each finding, run the decision tree:
 
-### 5. RESPOND
-- If you agree: state briefly why and move to implement.
-- If you disagree: push back with specific technical reasoning. Reference the code, the spec, or the constraint that makes the suggestion wrong or inapplicable.
+```
+  VERIFY: Is the finding factually accurate?
+    → NO → PUSH BACK with evidence (cite actual code)
+    → YES or UNCERTAIN → continue
 
-### 6. IMPLEMENT
-Implement accepted changes one item at a time. Test after each change. Do not batch multiple fixes without verifying each one individually.
+  HARM CHECK: Would the fix cause demonstrable harm?
+    a. Break existing functionality? → PUSH BACK (cite what breaks)
+    b. Conflict with a documented design decision? → PUSH BACK (cite the doc + passage)
+    c. Destabilize code outside this session's scope? → PUSH BACK (cite the risk)
+    d. Duplicate work explicitly assigned to another session in manifest? → DEFER (cite session ID)
+    → None of the above → FIX IT
+```
+
+No severity evaluation. No "is this worth my time." If you can't point to concrete harm, you fix.
+
+### 4. IMPLEMENT
+Fix accepted items one at a time. Verify after each change. Do not batch multiple fixes without verifying each one individually.
+
+## Exhaustive Pushback Criteria
+
+If it's not on this list, it's not a valid pushback:
+
+1. **Factually wrong** — The code doesn't do what the reviewer claims. Cite the actual code that disproves the finding.
+2. **Fix breaks something** — The fix would cause a test failure, runtime error, or regression. Identify what breaks.
+3. **Conflicts with design doc** — A documented architectural decision (design doc, CLAUDE.md — not assumed) explicitly chose this approach. Cite the document and passage.
+4. **Destabilizes other sessions** — The fix requires changing files that other in-flight sessions depend on, risking merge conflicts or broken assumptions. Cite which sessions and why.
+5. **Assigned elsewhere** — Another session in the manifest is explicitly tasked with this exact area. Cite the session ID and task.
+
+## Forbidden Dismissals
+
+These rationalizations are never valid:
+
+- "Low risk" / "low impact" — Not a harm argument. Fix it.
+- "Technically works" / "not build-breaking" — Not a harm argument. Fix it.
+- "Out of scope for my session" — Codebase quality is always in scope. Fix it.
+- "Pre-existing issue" — If you're touching this area, improve it. Fix it.
+- "Won't change during this project" — You don't know that. Fix it.
+- "Thin wrapper / pure constants" — Not exempt from quality standards. Fix it.
+- "Cosmetic / style preference" — Code organization affects agent navigability. Fix it.
+- "Future sessions will handle this" — Unless assigned in the manifest, wishful thinking. Fix it.
+- "This is theoretical / no practical risk" — Agent navigability IS practical. Fix it.
+
+## Legitimate Context the Reviewer May Lack
+
+Reviewers (plan reviewers, code reviewers, audit agents) don't see everything. Session agents have valid pushback when the reviewer doesn't know about:
+
+- Design doc decisions and their rationale
+- Cross-session dependencies in the manifest
+- Architectural constraints from the brainstorm/planning phase
+- Future session assignments that cover this area
+
+This context powers pushback through the proven-harm criteria above. Frame it as "this fix would cause harm because..." — not "this isn't worth fixing because..."
 
 ## Forbidden Responses
 
-- "You're absolutely right!" -- Do not perform enthusiasm. Just state your assessment.
-- "Great catch!" -- Same. Evaluate, don't flatter.
-- Blanket agreement without verification -- Never accept feedback without checking it against the code first.
+- "You're absolutely right!" — Do not perform enthusiasm. Just state your assessment.
+- "Great catch!" — Same. Evaluate, don't flatter.
+- Blanket agreement without verification — Never accept feedback without checking it against the code first.
 - Implementing all suggestions in one batch without individual testing.
-- "This is pre-existing, downgrade to INFO" -- without proving the pre-existing issue isn't agent-degrading or amplified by new code copying the pattern.
-
-## When to Push Back
-
-- The reviewer misread the code or missed relevant context.
-- The suggested fix would break something else.
-- The concern is theoretical with no practical risk in this context. (Note: agent-navigability risk IS practical risk — if the next AI session will be confused or misled, that's not theoretical. See the audit section below.)
-- The feedback conflicts with project conventions or constraints.
-- The fix is out of scope for the current task. **This does NOT apply to audit or coherence findings** — audits evaluate codebase health, not session scope. See the next section.
-
-State your reasoning clearly and concisely. Cite specific lines, tests, or constraints. Let the technical argument stand on its own.
-
-## Audit and Coherence Feedback — Different Rules
-
-Coherence audits and full audits evaluate **codebase health**, not session blame. They ask "does this degrade the codebase?" — not "who introduced this?" This changes how you evaluate their findings.
-
-### "Pre-existing" is not a dismissal
-
-When an audit flags a DRY violation, convention drift, or competing implementation, the question is NOT "was this here before my session?" The question is: **will this confuse or mislead the next AI session that touches this code?**
-
-If new code copies or amplifies a pre-existing bad pattern, the finding stands. The audit caught it because new code made it worse — more files with the same duplication, more places future sessions will copy from. "The architect deferred it" or "the existing code does this too" is not a defense when the audit's blocking threshold says agent-degrading issues are BLOCKING.
-
-To downgrade a pre-existing finding, you must demonstrate one of:
-- The pattern is NOT agent-degrading — future sessions won't be confused by it
-- The finding is factually wrong — the code doesn't actually duplicate what the audit claims
-- The "duplication" serves a genuine technical purpose (e.g., intentionally different implementations behind a similar interface)
-
-### Agent-degrading stays BLOCKING
-
-These categories are BLOCKING regardless of when they were introduced:
-- **DRY violations** — duplicated logic, constants, or patterns across files
-- **Convention drift** — new code following a different pattern than established code
-- **Competing implementations** — multiple utilities/helpers doing the same thing
-- **Unclear module boundaries** — same responsibility split across unrelated files
-
-The test: "If a new AI session reads this code, will it know which pattern to follow?" If the answer is no, it's BLOCKING.
-
-**Invalid dismissals for agent-degrading findings:**
-- "This is theoretical / no practical risk" — Agent navigability IS practical. If the next session greps for a utility and finds three competing versions, that's a concrete problem, not a theoretical one.
-- "This doesn't break the app" — The blocking threshold includes agent-degrading, not just app-breaking. A DRY violation that compiles fine still blocks if the next session will copy the wrong implementation.
-- "This is a style/organization preference" — Module boundaries, file organization, and naming consistency are not style preferences when they determine whether an AI session can navigate the codebase. Do not reclassify these as cosmetic.
-- "This is out of scope / pre-existing" — Audits are codebase-scoped. There is no "out of scope." For pre-existing, you must prove the issue is NOT agent-degrading to downgrade it.
-
-### What you CAN still push back on
-
-Audit findings are not infallible. Push back when:
-- The finding is factually incorrect (the code doesn't do what the audit claims)
-- The "duplication" is superficial — similar syntax but genuinely different logic
-- The fix would require changes outside the layer's scope that risk destabilizing unrelated code
-- A defense-in-depth suggestion is presented as a security gap, but the existing protection chain is documented and sound

@@ -275,17 +275,18 @@ Invoke `/autoboard:coherence-audit` via the Skill tool. This skill invokes `/aut
 #### 4h. Process Coherence Results (NON-NEGOTIABLE)
 
 Invoke `/autoboard:receiving-review` to critically evaluate each audit finding before acting.
-Apply the READ → UNDERSTAND → VERIFY → EVALUATE → RESPOND workflow to the coherence report.
-In particular: verify that each BLOCKING finding meets the blocking criteria (build-breaking, agent-degrading, or user-impacting).
-If a finding clearly does not meet ANY criterion, downgrade it to INFO with a one-line justification logged to progress.md.
+Apply the decision tree to each finding: verify factual accuracy, then check whether fixing would cause demonstrable harm. The only valid dismissals are: factually wrong, fix breaks something, conflicts with documented design decision, destabilizes other sessions, or assigned to another session in the manifest. "Low risk," "technically works," and "out of scope" are NOT valid dismissals — completeness costs seconds for AI.
+
+Log each dismissed finding (with its proven-harm justification) to progress.md.
 
 After evaluation:
-- **No BLOCKING issues remain:** Proceed to QA gate or knowledge curation.
-- **BLOCKING issues remain:** Invoke `/autoboard:coherence-fixer` via the Skill tool. Do NOT attempt to fix issues yourself.
+- **No findings survive pre-screening:** Proceed to QA gate or knowledge curation.
+- **Any findings survive:** Invoke `/autoboard:coherence-fixer` via the Skill tool. Pipeline gated — layer cannot advance until all surviving findings are resolved. No distinction between BLOCKING and INFO for gating. Do NOT attempt to fix issues yourself.
 
 | Thought that means STOP | Reality |
 |---|---|
-| "I'll just downgrade everything so I don't have to run the fixer" | Each downgrade requires specific technical reasoning against the blocking criteria. Lazy bulk downgrades are not critical thinking. |
+| "I'll just dismiss everything so I don't have to run the fixer" | Each dismissal requires proven harm — not "low risk" or "technically works." Lazy bulk dismissals are not critical thinking. |
+| "These INFO items aren't worth a fixer" | Completeness costs seconds. Unfixed findings compound. Dispatch the fixer. |
 | "I can fix this quickly myself" | You are the orchestrator, not a session agent. Dispatch the fixer with the full session workflow. |
 | "I'll report the findings to the user and wait" | The fixer dispatches immediately. Do not stop. Do not wait. |
 
@@ -417,7 +418,7 @@ These are real failure modes observed in production runs. If you catch yourself 
 | Skip the setup command | Backend has no schema. Every QA gate fails. Every fixer fails. All sessions wasted. |
 | Use Explore instead of audit skill | Quick scan misses convention drift, DRY violations, security gaps. Compound issues propagate to later layers. |
 | Inject skip instructions into QA prompt | QA agent skips valid tests. Features ship untested. User discovers bugs in production. |
-| Downgrade BLOCKING to INFO | Real issues propagate. Later layers build on broken foundations. The fixer never runs. |
+| Dismiss findings without proven harm | Real issues propagate. Later layers build on broken foundations. The fixer never runs. |
 | Skip audits for single-session layers | Cross-layer issues go undetected. Architecture drifts from prior layers. |
 | Build briefs manually instead of using skill | Missing sections (standards, test baseline, knowledge). Session agents fail or produce lower quality. |
 | Skip knowledge curation | Next layer's sessions lack context. They rebuild utilities that exist, use wrong patterns, miss conventions. |
