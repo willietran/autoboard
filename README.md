@@ -1,5 +1,5 @@
 # Autoboard
-Autoboard is a strict eng lead whose sole job is to make sure your Claude Code Agent writes clean and functioning code. 
+Autoboard is an eng lead who can orchestrate parallel agents while ensuring they always write clean and functioning code. 
 
 You come to Autoboard with am ambitious idea, and it'll break it down into manageable chunks, dispatch isolated session agents, and identify key integration layers to manage QA to make sure it actually works and run a thorough independent audit to identify and then fix any slop. 
 
