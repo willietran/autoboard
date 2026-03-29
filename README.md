@@ -1,5 +1,5 @@
 # Autoboard
-Autoboard is an eng lead who can orchestrate parallel agents while ensuring they always write clean and functioning code. 
+Autoboard is a strict AI Engineering Lead that stops Claude from writing slop. 
 
 You come to Autoboard with am ambitious idea, and it'll break it down into manageable chunks, dispatch isolated session agents, and identify key integration layers to manage QA to make sure it actually works and run a thorough independent audit to identify and then fix any slop. 
 
