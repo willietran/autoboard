@@ -12,7 +12,7 @@ You give Claude a big feature and leave it running. You come back to code that l
 
 - **Context rot** - As the context window fills, the agent gets dumber. Tests get skipped. Code gets sloppy. By hour two it's writing slop and doesn't know it.
 - **No accountability** - The agent that wrote the code is the same one reviewing it. It will always tell you it did a good job.
-- **Compounding errors** - Each task builds on the last. One bad decision early on poisons everything downstream. By the time you notice, you're rebuilding from scratch.
+- **Compounding errors** - Early code might not even work, but downstream tasks build on top of it assuming it does. By the time you notice, the whole thing is rotten from the foundation up.
 - **Babysitting tax** - So you start reviewing every diff, re-running tests yourself, checking if the agent actually did what it said. Now you're doing the agent's job.
 
 ## Installation
