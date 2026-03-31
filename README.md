@@ -1,6 +1,6 @@
 # Autoboard
 
-**Give it a feature. Walk away. Come back to a working app with no slop.**
+**Give it a feature. Walk away. Come back to code a senior engineer would approve.**
 
 Autoboard is a Claude Code plugin that runs your entire build autonomously. You describe what you want, the orchestrator breaks it into parallel coding sessions, and every session is independently reviewed, tested, and audited before anything merges. No babysitting. No reviewing every diff. No waking up to a mess.
 
