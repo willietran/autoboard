@@ -1,13 +1,13 @@
 ---
 name: coherence-fixer
-description: Dispatch a fixer session agent for blocking coherence issues. Creates worktree, builds fixer brief, spawns agent, merges fix, re-audits with retry logic. Re-invoke at the start of each new layer.
+description: Dispatch a fixer session agent for coherence issues that survived pre-screening. Creates worktree, builds fixer brief, spawns agent, merges fix, re-audits with retry logic. Re-invoke at the start of each new layer.
 ---
 
 # Coherence Fixer
 
-Dispatch a full session agent to fix BLOCKING coherence issues. The fixer loads `/autoboard:session-workflow` and follows the complete Explore → Plan → Review → Implement → Verify → Code Review → Commit lifecycle.
+Dispatch a full session agent to fix coherence issues that survived orchestrator pre-screening. The fixer loads `/autoboard:session-workflow` and follows the complete Explore → Plan → Review → Implement → Verify → Code Review → Commit lifecycle.
 
-**Prerequisites:** A COHERENCE-REPORT with BLOCKING issues from the coherence-audit skill. If tracking is active, the coherence-audit skill has already created an on-demand issue — use its issue number and item ID.
+**Prerequisites:** A COHERENCE-REPORT with findings that survived orchestrator pre-screening (BLOCKING, INFO, or both). If tracking is active, the coherence-audit skill has already created an on-demand issue — use its issue number and item ID.
 
 ---
 
@@ -37,7 +37,7 @@ Project directory: docs/autoboard/{slug}/
 Worktree path: /tmp/autoboard-{slug}-coherence-fix-L{N}
 Progress directory: /tmp/autoboard-{slug}-progress/
 
-[COHERENCE FIX] Layer coherence audit found blocking issues after Layer {N}.
+[COHERENCE FIX] Layer coherence audit found issues after Layer {N}.
 
 Coherence findings (full COHERENCE-REPORT):
 {paste the full COHERENCE-REPORT block verbatim — not a paraphrased summary}
@@ -66,7 +66,7 @@ If no tasks have Key test scenarios, omit this block.}
 These inform test quality remediation — if the BLOCKING findings include test quality issues,
 the fix should ensure tests cover these scenarios.
 
-Your job: fix the BLOCKING items in the coherence report. INFO items are informational only — do NOT fix them.
+Your job: fix all items in the coherence report that survived orchestrator pre-screening — BLOCKING and INFO alike. Address BLOCKING items first. Apply the receiving-review decision tree to each finding: fix unless the fix would cause demonstrable harm (breaks something, conflicts with design doc, destabilizes other sessions).
 
 Follow the full session workflow: explore what's broken, plan the fix,
 get it reviewed, implement, verify, get code reviewed, commit.
@@ -134,8 +134,8 @@ After the fixer completes:
 2. **Tracking (if active):** `post-comment(coherence-issue, "Fixer attempt {M} complete. {summary}")`
 3. **Merge fix** to the feature branch (squash merge — see merge skill)
 4. **Re-run coherence audit** with the same checkpoint and same dimensions
-5. **No BLOCKING issues:** `close-ticket` + `move-ticket(Done)`, proceed to QA gate or next layer
-6. **Still BLOCKING:** Compare findings between consecutive COHERENCE-REPORTs, dispatch another fixer (see Retry Logic)
+5. **No findings survive re-screening:** `close-ticket` + `move-ticket(Done)`, proceed to QA gate or next layer
+6. **Findings remain:** Compare findings between consecutive COHERENCE-REPORTs, dispatch another fixer (see Retry Logic)
 
 ---
 
@@ -162,4 +162,4 @@ post-comment(coherence-issue, "Coherence fixer limit reached after {M} attempts.
 move-ticket(coherence-issue, Failed)
 ```
 
-Escalate to the user — report the persistent findings and what was attempted. Do NOT continue to the QA gate with unresolved BLOCKING coherence issues.
+Escalate to the user — report the persistent findings and what was attempted. Do NOT continue to the QA gate with unresolved coherence issues.

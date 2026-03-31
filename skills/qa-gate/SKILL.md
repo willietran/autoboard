@@ -178,7 +178,7 @@ Extract which criteria failed and the reason given for each failure.
 ### Step 2 — Apply the Infrastructure Failure Allowlist
 
 **ONLY** these qualify as genuine infrastructure failures:
-- Browser tool not detected (no Playwright MCP in available tools, `which agent-browser` returns non-zero)
+- No browser tool available (none detected and none configured via `browser-tool` in manifest)
 - Dev server process exited or never responded to health checks
 - Missing env vars that prevent the app from starting at all
 

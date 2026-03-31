@@ -103,7 +103,7 @@ Each session agent executes this workflow (via `/autoboard:session-workflow`):
 
 ### QA Gates
 
-QA gates run between dependency layers to catch compound errors. The orchestrator spawns a QA subagent that invokes `/autoboard:verification --full` — build validation + browser smoke tests (Playwright MCP or similar). Falls back to build-only if no browser tool is installed. QA runs as a subagent to keep browser output out of the orchestrator's window.
+QA gates run between dependency layers to catch compound errors. The orchestrator spawns a QA subagent that invokes `/autoboard:verification --full` — build validation + browser smoke tests (gstack browse, Playwright MCP, or similar). Falls back to build-only if no browser tool is installed. QA runs as a subagent to keep browser output out of the orchestrator's window.
 
 ---
 

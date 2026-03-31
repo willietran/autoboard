@@ -54,13 +54,15 @@ The audit skill spawns parallel dimension agents (one per dimension), each scope
 
 **You are not done.** The COHERENCE-REPORT is an intermediate result, not a deliverable. Act on it immediately — do not stop, do not summarize to the user and wait, do not end your turn.
 
-### No BLOCKING Issues
+### No Findings Survive Pre-Screening
 
 Proceed to QA gate or knowledge curation. No tracking action needed — coherence issues are not pre-created, so there is nothing to close.
 
-### BLOCKING Issues Found
+### Findings Survive Pre-Screening (BLOCKING or INFO)
 
-Route to the coherence-fixer. The run skeleton handles this routing — your job is to signal the result.
+Route to the coherence-fixer. The fixer handles all surviving findings — BLOCKING and INFO alike. The run skeleton handles this routing — your job is to signal the result.
+
+The pipeline is gated until all surviving findings are resolved. No distinction between BLOCKING and INFO for gating — any unfixed finding is a pattern the next layer's sessions might copy or drift from.
 
 Do NOT attempt to fix issues yourself — the fixer needs the full session workflow. Do NOT report the findings to the user and stop — the fixer must be dispatched now.
 
@@ -76,7 +78,7 @@ Do NOT attempt to fix issues yourself — the fixer needs the full session workf
    ```
 3. Note the issue number and item ID — the coherence-fixer skill needs these for the fixer brief's `## Tracking` section.
 
-**Key design decision:** Coherence audit issues are NOT pre-created during setup. They are created on-demand only when BLOCKING findings trigger a fixer. Most layers pass cleanly — pre-creating issues would just create noise that gets immediately closed.
+**Key design decision:** Coherence audit issues are NOT pre-created during setup. They are created on-demand only when findings survive pre-screening and trigger a fixer. Most layers pass cleanly — pre-creating issues would just create noise that gets immediately closed.
 
 ---
 
@@ -90,3 +92,4 @@ Do NOT attempt to fix issues yourself — the fixer needs the full session workf
 | "QA will catch cross-session issues" | QA tests functionality. Coherence catches architecture drift — different concern. |
 | "I already checked the merges look clean" | Your eyeball check is not a structured multi-dimension audit. Run the skill. |
 | "The audit found issues, let me report them" | Reports are intermediate results, not deliverables. Dispatch the fixer immediately. |
+| "These are just INFO items, no fixer needed" | All findings that survive pre-screening get fixed. INFO items are cheap — dispatch the fixer. |

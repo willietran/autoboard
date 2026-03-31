@@ -274,18 +274,22 @@ Invoke the `/autoboard:coherence-audit` skill. This skill invokes `/autoboard:au
 
 #### 4h. Process Coherence Results (NON-NEGOTIABLE)
 
-Invoke the `/autoboard:receiving-review` to critically evaluate each audit finding before acting.
-Apply the READ → UNDERSTAND → VERIFY → EVALUATE → RESPOND workflow to the coherence report.
-In particular: verify that each BLOCKING finding meets the blocking criteria (build-breaking, agent-degrading, or user-impacting).
-If a finding clearly does not meet ANY criterion, downgrade it to INFO with a one-line justification logged to progress.md.
+**MANDATORY FIRST ACTION:** Invoke the `/autoboard:receiving-review` skill BEFORE evaluating ANY finding. Do NOT read the findings and start evaluating them yourself. Do NOT "apply the decision tree from memory." The skill must be loaded first — it contains the authoritative decision tree and forbidden dismissals. Any evaluation performed without loading this skill first is invalid.
+
+**Verification:** The skill was invoked before any finding was evaluated. If you catch yourself evaluating findings without having invoked the skill, STOP and invoke it now.
+
+After the skill loads, apply its decision tree to each finding. Log each dismissed finding (with its proven-harm justification) to progress.md.
 
 After evaluation:
-- **No BLOCKING issues remain:** Proceed to QA gate or knowledge curation.
-- **BLOCKING issues remain:** Invoke the `/autoboard:coherence-fixer` skill. Do NOT attempt to fix issues yourself.
+- **No findings survive pre-screening:** Proceed to QA gate or knowledge curation.
+- **Any findings survive:** Invoke the `/autoboard:coherence-fixer` skill. Pipeline gated — layer cannot advance until all surviving findings are resolved. No distinction between BLOCKING and INFO for gating. Do NOT attempt to fix issues yourself.
 
 | Thought that means STOP | Reality |
 |---|---|
-| "I'll just downgrade everything so I don't have to run the fixer" | Each downgrade requires specific technical reasoning against the blocking criteria. Lazy bulk downgrades are not critical thinking. |
+| "I already know how to evaluate findings" | You don't have the decision tree loaded. Invoke the skill. Every time. |
+| "I'll just quickly check these before loading the skill" | That's how you end up dismissing 17 findings with banned rationalizations. Load the skill FIRST. |
+| "I'll just dismiss everything so I don't have to run the fixer" | Each dismissal requires proven harm — not "low risk" or "technically works." Lazy bulk dismissals are not critical thinking. |
+| "These INFO items aren't worth a fixer" | Completeness costs seconds. Unfixed findings compound. Dispatch the fixer. |
 | "I can fix this quickly myself" | You are the orchestrator, not a session agent. Dispatch the fixer with the full session workflow. |
 | "I'll report the findings to the user and wait" | The fixer dispatches immediately. Do not stop. Do not wait. |
 
@@ -370,7 +374,7 @@ Update `docs/autoboard/{slug}/progress.md` after every significant event:
 Updated: {ISO timestamp}
 ```
 
-Then immediately proceed to the next layer. Do NOT ask the user if they want to continue.
+**Then immediately proceed to the next layer.** Do NOT ask the user if they want to continue. Do NOT ask "shall I proceed?" or "want to review anything first?" Do NOT pause for confirmation between layers — not after merges, not after coherence fixers, not after QA gates, not after progress reports. The only acceptable stopping points are listed at the top of this document. Everything else: just do it.
 
 ### Step 5: Completion (NON-NEGOTIABLE)
 
@@ -417,9 +421,11 @@ These are real failure modes observed in production runs. If you catch yourself 
 | Skip the setup command | Backend has no schema. Every QA gate fails. Every fixer fails. All sessions wasted. |
 | Use Explore instead of audit skill | Quick scan misses convention drift, DRY violations, security gaps. Compound issues propagate to later layers. |
 | Inject skip instructions into QA prompt | QA agent skips valid tests. Features ship untested. User discovers bugs in production. |
-| Downgrade BLOCKING to INFO | Real issues propagate. Later layers build on broken foundations. The fixer never runs. |
+| Evaluate audit findings without loading receiving-review skill | You dismiss everything with banned rationalizations. The skill contains the authoritative decision tree. Load it first. |
+| Dismiss findings without proven harm | Real issues propagate. Later layers build on broken foundations. The fixer never runs. |
 | Skip audits for single-session layers | Cross-layer issues go undetected. Architecture drifts from prior layers. |
 | Build briefs manually instead of using skill | Missing sections (standards, test baseline, knowledge). Session agents fail or produce lower quality. |
 | Skip knowledge curation | Next layer's sessions lack context. They rebuild utilities that exist, use wrong patterns, miss conventions. |
 | Tell QA "backend isn't available" | If preflight provisioned it, it IS available. Run setup. The claim is false. |
+| Ask the user before proceeding to the next layer | "Shall I continue?" "Want to review?" — NO. The run is autonomous. Proceed immediately. The only acceptable stopping points are listed at the top of this document. |
 | Stop after a skill returns (setup, tracking, audit, etc.) | Skills are intermediate steps, not turn boundaries. Every skill invocation returns to YOU — the orchestrator. Act on the result and continue to the next step. The only acceptable stopping points are listed at the top of this document. |

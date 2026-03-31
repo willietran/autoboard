@@ -49,7 +49,7 @@ platform: auto                 # auto | claude-code | codex (default: auto — d
 **`qa-mode`** — ask the user which QA mode they want:
 
 > **QA testing level for this project:**
-> 1. **Full** — Browser integration tests + build/test. QA agents navigate the app, fill forms, verify UI. Requires a browser tool (Playwright MCP or agent-browser) and a dev server. Best for web apps with UI.
+> 1. **Full** — Browser integration tests + build/test. QA agents navigate the app, fill forms, verify UI. Requires a browser tool (gstack browse, Playwright MCP, or agent-browser) and a dev server. Best for web apps with UI.
 > 2. **Build-only** (default) — Type check, build, and test suite only. No browser testing. Appropriate for CLIs, libraries, backend-only services, or when no browser tool is available.
 
 Default to `build-only` if the user doesn't answer. This ensures the run completes even for CLI apps or projects without browser tooling.
@@ -242,7 +242,7 @@ After drafting all tasks, scan for cross-session shared needs:
 
 ### QA Gate Placement
 
-QA gates are checkpoints where the orchestrator validates that the merged work is correct before proceeding. They are NOT sessions — the orchestrator runs them directly (build validation + Playwright smoke tests).
+QA gates are checkpoints where the orchestrator validates that the merged work is correct before proceeding. They are NOT sessions — the orchestrator runs them directly (build validation + browser smoke tests).
 
 #### When to place QA gates
 
