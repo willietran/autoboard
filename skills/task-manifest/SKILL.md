@@ -403,7 +403,7 @@ After generating the manifest:
    - **Architectural foundations** — shared utilities extracted to early-layer foundation tasks? Convention seeding in first sessions? Security parity across similar endpoints?
    - **Test scenario coverage** — key test scenarios cover error paths and edge cases, not just happy paths? Browser-tagged tasks are non-exempt from TDD? Scenarios reference the design doc's critical user flows?
    - **Explore target quality** — are explore targets purpose-driven questions, not generic directory listings? Do they explain what to look for and why?
-2. Process feedback critically — push back on wrong suggestions
+2. After each review round, invoke `/autoboard:receiving-review` via the Skill tool BEFORE evaluating the plan-reviewer's findings. Apply its decision tree and forbidden dismissals to each finding.
 3. Update manifest with accepted changes
 4. Write audit trail to `docs/autoboard/<slug>/architect-review.md`
 
