@@ -186,20 +186,23 @@ Complexity measures **cognitive difficulty** - how hard you have to think, not h
 
 **Distribution check:** After scoring all tasks, verify the distribution. If more than 40% of tasks score 5 or 8, re-examine each one against the baseline. Most real projects are 60-70% complexity 1-3 with a few genuinely hard ones. A top-heavy distribution signals the scorer is conflating effort with complexity.
 
-### Effort Scoring
+### Effort Derivation
 
-Effort measures **volume of work** - files touched, lines of code, number of touch points. It is independent of complexity. Something can be a lot of work but not complex (high effort, low complexity), or very complex but small (low effort, high complexity).
+Effort is **derived from complexity**, not scored independently. The `--effort` flag controls the session agent's reasoning depth - cognitive difficulty is the right input, not volume of work.
 
-| Effort | Meaning | Heuristic |
-|--------|---------|-----------|
-| `low` | 1-2 files, under 100 lines of changes | Config tweak, single-function fix |
-| `medium` | 3-6 files, 100-400 lines | Standard feature: handler + types + tests |
-| `high` | 7-15 files, 400-1000 lines | Multi-module feature: routes + middleware + types + migrations + tests |
-| `max` | 15+ files or 1000+ lines | Large-scale refactoring, new subsystem, cross-cutting concern |
+| Complexity | Effort | With TDD |
+|------------|--------|----------|
+| 1 (Rote) | `low` | `medium` |
+| 2 (Guided) | `medium` | `medium` |
+| 3 (Considered) | `medium` | `medium` |
+| 5 (Tricky) | `high` | `high` |
+| 8 (Novel) | `max` | `max` |
 
-**TDD bump:** TDD adds volume (test files, setup, red-green-refactor cycles), not cognitive difficulty. Non-Exempt TDD tasks get +1 effort tier (low->medium, medium->high, high->max, max stays max). This is the "adjusted effort."
+**TDD bump:** TDD bumps effort only for Rote tasks (low -> medium) because TDD adds test-design thinking to otherwise zero-decision work. For complexity >= 2, TDD adds volume but not cognitive load - effort stays the same.
 
-**Session effort** = max(adjusted effort) across all tasks in the session. This is what gets passed to the `--effort` flag.
+**Distribution:** `medium` is the workhorse tier for the majority of tasks. `high` is uncommon (only Tricky tasks). `max` is rare (only Novel tasks).
+
+**Session effort** = max(derived effort) across all tasks in the session. This is what gets passed to the `--effort` flag.
 
 ### Session Grouping
 
@@ -249,11 +252,12 @@ The sessions table must show task complexities (Fibonacci), effort, domain label
 ```markdown
 | Session | Tasks | Complexity | Domain | Effort | Rationale |
 |---------|-------|-----------|--------|--------|-----------|
-| S1 | T1 (2), T2 (3) | 5 | Data layer | high | Sequential chain, shared schema context |
-| S2 | T3 (1) | 1 | Auth | medium | Rote endpoint, but TDD bumps effort low->medium |
+| S1 | T1 (2), T2 (3) | 5 | Data layer | medium | Sequential chain, shared schema context |
+| S2 | T3 (1) | 1 | Auth | medium | Rote endpoint, TDD bumps low->medium |
+| S3 | T4 (5) | 5 | Payments | high | Race condition in concurrent writes |
 ```
 
-**Session effort:** max(adjusted effort) across all tasks in the session. Adjusted effort = base effort + TDD bump. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
+**Session effort:** max(derived effort) across all tasks in the session. Derived effort uses the complexity-to-effort mapping above. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
 
 ### Architectural Foundations
 
@@ -423,7 +427,7 @@ After generating the manifest:
 1. Dispatch the `autoboard:plan-reviewer` agent via the Agent tool (max 3 rounds). Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
    - **QA acceptance criteria thoroughness** — do criteria test complete flows (signup -> redirect -> dashboard), not isolated actions ("user can sign up")? Do they include negative cases for security-critical flows? Does every user-facing feature from the design doc have at least one criterion?
    - **Dependency correctness** — apply the worktree test to every task. Would this task's agent succeed in a worktree containing only the repo's current main branch plus its completed dependencies? Are implicit dependencies captured (shared types, config, toolchains)?
-   - **Session sizing** — are complexity caps respected (raw Fibonacci sum <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is effort independently scored per-task (not derived from complexity)? Does the complexity distribution pass the 40% check (no more than 40% of tasks at 5+)?
+   - **Session sizing** — are complexity caps respected (raw Fibonacci sum <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is effort correctly derived from complexity (1->low, 2/3->medium, 5->high, 8->max, with TDD bumping only Rote tasks low->medium)? Does the complexity distribution pass the 40% check (no more than 40% of tasks at 5+)?
    - **Session grouping quality** — domain cohesion over parallelism? No 1:1 task-to-session anti-pattern? Cross-session file independence (no overlapping creates/modifies without serialization)?
    - **QA gate placement** — gates at the right layer boundaries? Not over-gated? Acceptance criteria testable at the gate boundary (not testing UI before the UI layer ships)?
    - **Architectural foundations** — shared utilities extracted to early-layer foundation tasks? Convention seeding in first sessions? Security parity across similar endpoints?
