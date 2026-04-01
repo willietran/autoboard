@@ -88,7 +88,7 @@ Progress directory: /tmp/autoboard-{slug}-progress/
 
 ## Tasks
 
-{Copy each task's full record from the manifest: title, creates, modifies, depends on, requirements, explore targets, TDD phase, test approach, key test scenarios, complexity, effort, commit message}
+{Copy each task's full record from the manifest: title, creates, modifies, depends on, requirements, explore targets, TDD phase, test approach, key test scenarios, complexity, commit message}
 
 ## Knowledge from Prior Sessions
 

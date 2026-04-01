@@ -93,7 +93,6 @@ Each task must include:
   - Error path: {scenario}
   - Edge case: {scenario}
 - **Complexity:** N
-- **Effort:** low | medium | high | max
 - **Suggested Session:** SN
 ```
 
@@ -184,25 +183,25 @@ Complexity measures **cognitive difficulty** - how hard you have to think, not h
 
 **Baseline anchoring:** Every manifest must identify one task as the **baseline** (complexity 2). This should be the most "standard" task - an endpoint, a component, a migration that follows an established pattern. All other tasks are scored *relative to this baseline*. Ask: "Is this task twice as hard to think about as the baseline? That's a 3. Does it have genuinely non-obvious failure modes? That's a 5."
 
-**Distribution check:** After scoring all tasks, verify the distribution. If more than 40% of tasks score 5 or 8, re-examine each one against the baseline. Most real projects are 60-70% complexity 1-3 with a few genuinely hard ones. A top-heavy distribution signals the scorer is conflating effort with complexity.
+**Distribution check:** After scoring all tasks, verify the distribution. If more than 40% of tasks score 5 or 8, re-examine each one against the baseline. Most real projects are 60-70% complexity 1-3 with a few genuinely hard ones. A top-heavy distribution signals the scorer is treating volume of work as cognitive difficulty.
 
 ### Effort Derivation
 
 Effort is **derived from complexity**, not scored independently. The `--effort` flag controls the session agent's reasoning depth - cognitive difficulty is the right input, not volume of work.
 
-| Complexity | Effort | With TDD |
-|------------|--------|----------|
-| 1 (Rote) | `low` | `medium` |
-| 2 (Guided) | `medium` | `medium` |
-| 3 (Considered) | `medium` | `medium` |
-| 5 (Tricky) | `high` | `high` |
-| 8 (Novel) | `max` | `max` |
+| Complexity | Effort |
+|------------|--------|
+| 1 (Rote) | `low` |
+| 2 (Guided) | `medium` |
+| 3 (Considered) | `medium` |
+| 5 (Tricky) | `high` |
+| 8 (Novel) | `max` |
 
-**TDD bump:** TDD bumps effort only for Rote tasks (low -> medium) because TDD adds test-design thinking to otherwise zero-decision work. For complexity >= 2, TDD adds volume but not cognitive load - effort stays the same.
+TDD does not affect effort. TDD adds volume (test files, red-green-refactor cycles) but not cognitive load - the reasoning depth needed is determined by the task's complexity alone.
 
 **Distribution:** `medium` is the workhorse tier for the majority of tasks. `high` is uncommon (only Tricky tasks). `max` is rare (only Novel tasks).
 
-**Session effort** = max(derived effort) across all tasks in the session. This is what gets passed to the `--effort` flag.
+**Session effort** = map the **max individual task complexity** in the session to the table above. This is what gets passed to the `--effort` flag. The session complexity sum (used for sizing caps) is a separate concern - it does not affect effort.
 
 ### Session Grouping
 
@@ -252,12 +251,12 @@ The sessions table must show task complexities (Fibonacci), effort, domain label
 ```markdown
 | Session | Tasks | Complexity | Domain | Effort | Rationale |
 |---------|-------|-----------|--------|--------|-----------|
-| S1 | T1 (2), T2 (3) | 5 | Data layer | medium | Sequential chain, shared schema context |
-| S2 | T3 (1) | 1 | Auth | medium | Rote endpoint, TDD bumps low->medium |
-| S3 | T4 (5) | 5 | Payments | high | Race condition in concurrent writes |
+| S1 | T1 (2), T2 (3) | 5 | Data layer | medium | Sequential chain, shared schema context. Max task = 3 -> medium |
+| S2 | T3 (1) | 1 | Auth | low | Rote endpoint following established patterns |
+| S3 | T4 (5) | 5 | Payments | high | Race condition in concurrent writes. Max task = 5 -> high |
 ```
 
-**Session effort:** max(derived effort) across all tasks in the session. Derived effort uses the complexity-to-effort mapping above. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
+**Session effort:** Map the highest individual task complexity in the session to the effort table. The Complexity column shows the sum (for sizing caps), but effort comes from the max single task. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
 
 ### Architectural Foundations
 
@@ -427,7 +426,7 @@ After generating the manifest:
 1. Dispatch the `autoboard:plan-reviewer` agent via the Agent tool (max 3 rounds). Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
    - **QA acceptance criteria thoroughness** — do criteria test complete flows (signup -> redirect -> dashboard), not isolated actions ("user can sign up")? Do they include negative cases for security-critical flows? Does every user-facing feature from the design doc have at least one criterion?
    - **Dependency correctness** — apply the worktree test to every task. Would this task's agent succeed in a worktree containing only the repo's current main branch plus its completed dependencies? Are implicit dependencies captured (shared types, config, toolchains)?
-   - **Session sizing** — are complexity caps respected (raw Fibonacci sum <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is effort correctly derived from complexity (1->low, 2/3->medium, 5->high, 8->max, with TDD bumping only Rote tasks low->medium)? Does the complexity distribution pass the 40% check (no more than 40% of tasks at 5+)?
+   - **Session sizing** — are complexity caps respected (raw Fibonacci sum <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is session effort correctly derived from the max individual task complexity (1->low, 2/3->medium, 5->high, 8->max) with no TDD adjustment? Does the complexity distribution pass the 40% check (no more than 40% of tasks at 5+)?
    - **Session grouping quality** — domain cohesion over parallelism? No 1:1 task-to-session anti-pattern? Cross-session file independence (no overlapping creates/modifies without serialization)?
    - **QA gate placement** — gates at the right layer boundaries? Not over-gated? Acceptance criteria testable at the gate boundary (not testing UI before the UI layer ships)?
    - **Architectural foundations** — shared utilities extracted to early-layer foundation tasks? Convention seeding in first sessions? Security parity across similar endpoints?
