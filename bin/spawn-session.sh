@@ -151,20 +151,22 @@ build_codex_args() {
     codex_effort="xhigh"
   fi
 
-  ARGS=(
+  if [[ "$SKIP_PERMISSIONS" == "true" ]]; then
+    ARGS=(--dangerously-bypass-approvals-and-sandbox)
+  else
+    ARGS=(
+      --ask-for-approval never
+      --sandbox workspace-write
+    )
+  fi
+  ARGS+=(
     exec "$PROMPT"
     --json
-    -c "model=\"$MODEL_ID\""
+    -m "$MODEL_ID"
   )
   # Effort: omit for medium (default), pass for others
   if [[ -n "$codex_effort" && "$codex_effort" != "medium" ]]; then
     ARGS+=(-c "model_reasoning_effort=\"$codex_effort\"")
-  fi
-  # Permissions
-  if [[ "$SKIP_PERMISSIONS" == "true" ]]; then
-    ARGS+=(--ask-for-approval never --sandbox danger-full-access)
-  else
-    ARGS+=(--ask-for-approval never --sandbox workspace-write)
   fi
   CLI_BIN="codex"
 }
