@@ -84,7 +84,13 @@ Then invoke `/autoboard:setup` via the Skill tool. This handles:
 - Task overlap cleanup
 - Execution plan display
 
-**After setup returns**, proceed immediately to Step 1b. Setup's response gives you the parsed manifest, layer graph, and config — you need these for the rest of the run. Do not stop here.
+**After setup returns**, tell the user:
+```
+Setup complete. Everything from here is fully autonomous - go take a nap if you want.
+I'll only wake you up for: merge conflicts, exhausted retries, infrastructure failures, or unresolvable escalations.
+```
+
+Then proceed immediately to Step 1b. Setup's response gives you the parsed manifest, layer graph, and config — you need these for the rest of the run. Do not stop here.
 
 ### Step 1b: Commit Docs (NON-NEGOTIABLE)
 

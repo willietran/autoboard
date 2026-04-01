@@ -394,11 +394,18 @@ Rules:
 ## Architect Review Loop
 
 After generating the manifest:
-1. Dispatch a critic subagent via the Agent tool (max 3 rounds)
-2. Critic evaluates: completeness, security, DRY, dependency correctness (apply the worktree test to every task — verify its isolated worktree will have everything it needs), explore coverage, performance (algorithmic complexity, I/O patterns), code elegance (clean abstractions, minimal complexity), TDD coverage (are the right tasks marked TDD?), code organization (file structure, module boundaries), debuggability (error handling patterns, informative errors), session grouping (domain cohesion, size caps, no 1:1 anti-pattern, cross-session file independence), **QA gate coverage** (do acceptance criteria cover every user-facing feature from the design doc? Are criteria end-to-end flows, not isolated actions? Would testing these criteria catch a broken dashboard, a failed redirect, or a missing page?), **architectural foundations** (are shared utilities extracted to early-layer foundation tasks? do downstream tasks reference them by path? is test approach specified per task? is security parity flagged across similar endpoints?), and **test scenario coverage** (do key test scenarios cover error paths and edge cases, not just happy paths? are browser-tagged tasks non-exempt from TDD? do scenarios reference the design doc's critical user flows?)
-3. Process feedback critically — push back on wrong suggestions
-4. Update manifest with accepted changes
-5. Write audit trail to `docs/autoboard/<slug>/architect-review.md`
+1. Dispatch the `autoboard:plan-reviewer` agent via the Agent tool (max 3 rounds). Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
+   - **QA acceptance criteria thoroughness** — do criteria test complete flows (signup -> redirect -> dashboard), not isolated actions ("user can sign up")? Do they include negative cases for security-critical flows? Does every user-facing feature from the design doc have at least one criterion?
+   - **Dependency correctness** — apply the worktree test to every task. Would this task's agent succeed in a worktree containing only the repo's current main branch plus its completed dependencies? Are implicit dependencies captured (shared types, config, toolchains)?
+   - **Session sizing** — are complexity caps respected (adjusted complexity <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is effort level correct for the session's max task complexity?
+   - **Session grouping quality** — domain cohesion over parallelism? No 1:1 task-to-session anti-pattern? Cross-session file independence (no overlapping creates/modifies without serialization)?
+   - **QA gate placement** — gates at the right layer boundaries? Not over-gated? Acceptance criteria testable at the gate boundary (not testing UI before the UI layer ships)?
+   - **Architectural foundations** — shared utilities extracted to early-layer foundation tasks? Convention seeding in first sessions? Security parity across similar endpoints?
+   - **Test scenario coverage** — key test scenarios cover error paths and edge cases, not just happy paths? Browser-tagged tasks are non-exempt from TDD? Scenarios reference the design doc's critical user flows?
+   - **Explore target quality** — are explore targets purpose-driven questions, not generic directory listings? Do they explain what to look for and why?
+2. Process feedback critically — push back on wrong suggestions
+3. Update manifest with accepted changes
+4. Write audit trail to `docs/autoboard/<slug>/architect-review.md`
 
 ## Terminal State
 
