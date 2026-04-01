@@ -32,5 +32,12 @@
 
 ## Review Agents
 
-- `autoboard:plan-reviewer` — Plan review with quality dimension checks
-- `autoboard:code-reviewer` — Code review with quality dimension checks
+- `autoboard:plan-reviewer` - Plan review with quality dimension checks
+- `autoboard:code-reviewer` - Code review with quality dimension checks
+
+## Orchestrator Agents
+
+- `autoboard:evidence-gatherer` - Compress failure evidence for orchestrator classification
+- `autoboard:qa-validator` - Validate QA-REPORT failures (fabrication, premature, genuine)
+- `autoboard:coherence-screener` - Pre-screen coherence findings via receiving-review decision tree
+- `autoboard:knowledge-curator` - Synthesize cross-session knowledge between layers

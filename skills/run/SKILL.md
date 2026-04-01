@@ -280,22 +280,18 @@ Invoke `/autoboard:coherence-audit` via the Skill tool. This skill invokes `/aut
 
 #### 4h. Process Coherence Results (NON-NEGOTIABLE)
 
-**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE evaluating ANY finding. Do NOT read the findings and start evaluating them yourself. Do NOT "apply the decision tree from memory." The skill must be loaded first — it contains the authoritative decision tree and forbidden dismissals. Any evaluation performed without loading this skill first is invalid.
+The coherence-audit skill (Step 4g) dispatches the `autoboard:coherence-screener` agent internally to pre-screen findings. The screener has the receiving-review decision tree baked in. You do NOT need to load `/autoboard:receiving-review` for coherence processing.
 
-**Verification:** The Skill tool was called with `receiving-review` before any finding was evaluated. If you catch yourself evaluating findings without having invoked the skill, STOP and invoke it now.
-
-After the skill loads, apply its decision tree to each finding. Log each dismissed finding (with its proven-harm justification) to progress.md.
-
-After evaluation:
-- **No findings survive pre-screening:** Proceed to QA gate or knowledge curation.
-- **Any findings survive:** Invoke `/autoboard:coherence-fixer` via the Skill tool. Pipeline gated — layer cannot advance until all surviving findings are resolved. No distinction between BLOCKING and INFO for gating. Do NOT attempt to fix issues yourself.
+After coherence-audit returns:
+- **No findings survived screening:** Proceed to QA gate or knowledge curation.
+- **Findings survived screening:** Invoke `/autoboard:coherence-fixer` via the Skill tool. Pipeline gated - layer cannot advance until all surviving findings are resolved. No distinction between BLOCKING and INFO for gating. Do NOT attempt to fix issues yourself.
 
 | Thought that means STOP | Reality |
 |---|---|
-| "I already know how to evaluate findings" | You don't have the decision tree loaded. Invoke the skill. Every time. |
-| "I'll just quickly check these before loading the skill" | That's how you end up dismissing 17 findings with banned rationalizations. Load the skill FIRST. |
-| "I'll just dismiss everything so I don't have to run the fixer" | Each dismissal requires proven harm — not "low risk" or "technically works." Lazy bulk dismissals are not critical thinking. |
-| "These INFO items aren't worth a fixer" | Completeness costs seconds. Unfixed findings compound. Dispatch the fixer. |
+| "I'll evaluate the coherence findings myself" | The screener agent has the authoritative decision tree. Trust the dispatch. |
+| "I'll load receiving-review to double-check" | Not needed for coherence processing - the screener bakes it in. receiving-review is for session agents (plan/code review). |
+| "The screener dismissed a finding I think is important" | The screener logs dismissed findings with pushback evidence. If the evidence is wrong, the fixer will catch it in the next audit. |
+| "These INFO items aren't worth a fixer" | All surviving findings get fixed. The screener already applied the decision tree. |
 | "I can fix this quickly myself" | You are the orchestrator, not a session agent. Dispatch the fixer with the full session workflow. |
 | "I'll report the findings to the user and wait" | The fixer dispatches immediately. Do not stop. Do not wait. |
 
@@ -317,29 +313,34 @@ Invoke `/autoboard:qa-gate` via the Skill tool. The QA prompt is a FIXED TEMPLAT
 
 #### 4j. Process QA Results (NON-NEGOTIABLE)
 
-- **QA passed:** Proceed to knowledge curation.
-- **QA failed with genuine code failures:** Invoke `/autoboard:qa-fixer` via the Skill tool. Do NOT ask the user — just fix it. The qa-fixer loops internally (fix → re-run QA → fix again) until the gate passes or 10 attempts are exhausted. Never ask the user during this loop.
-- **Infrastructure failure (verified via allowlist + self-check):** Report to user and block.
+The qa-gate skill dispatches the `autoboard:qa-validator` agent internally to classify failures (fabrication detection, premature criteria, genuine failures). You route based on the validator's verdict - see the qa-gate skill for the full routing table.
 
-**Verification:** After the qa-fixer skill returns, you must have a QA-REPORT with `Result: PASS`. The QA-REPORT is the source of truth — not the fixer's status file, not the fixer's commit message. If the final QA-REPORT says FAIL and the fixer limit is not reached, re-invoke `/autoboard:qa-fixer`. If the qa-fixer returned without reaching PASS or exhausting all 10 attempts, something went wrong — re-invoke it.
+- **QA passed (or validator says PASS/PREMATURE):** Proceed to knowledge curation.
+- **QA failed with genuine code failures:** Invoke `/autoboard:qa-fixer` via the Skill tool. Do NOT ask the user - just fix it. The qa-fixer loops internally (fix -> re-run QA -> fix again) until the gate passes or 10 attempts are exhausted. Never ask the user during this loop.
+- **Infrastructure failure (verified via allowlist + self-check):** Report to user and block.
+- **Fabrication detected:** The qa-gate skill handles respawning the QA agent with an override message.
+
+**Verification:** After the qa-fixer skill returns, you must have a QA-REPORT with `Result: PASS`. The QA-REPORT is the source of truth - not the fixer's status file, not the fixer's commit message. If the final QA-REPORT says FAIL and the fixer limit is not reached, re-invoke `/autoboard:qa-fixer`. If the qa-fixer returned without reaching PASS or exhausting all 10 attempts, something went wrong - re-invoke it.
 
 | Thought that means STOP | Reality |
 |---|---|
-| "The failures look like infrastructure issues" | Verify against the allowlist. Self-check with the browser tool. QA agents fabricate infrastructure claims. |
+| "The failures look like infrastructure issues" | The qa-validator checks the allowlist and cross-references prior reports. Trust its classification. |
 | "I'll skip the fixer and report to the user" | Genuine code failures get auto-fixed. Only verified infrastructure failures go to the user. |
 | "QA failed but the fixer says it's fixed" | The QA-REPORT is the source of truth, not the fixer's status file. If QA-REPORT says FAIL, dispatch another fixer. |
 | "The fixer committed, so the bug must be fixed" | A commit proves code changed, not that the bug is gone. Only a passing QA-REPORT proves the fix worked. |
 
 #### 4k. Curate Knowledge (NON-NEGOTIABLE)
 
-Invoke `/autoboard:knowledge` via the Skill tool. Every layer produces knowledge for the next — even single-session layers.
+Invoke `/autoboard:knowledge` via the Skill tool. Every layer produces knowledge for the next - even single-session layers.
+
+The knowledge skill dispatches the `autoboard:knowledge-curator` agent for synthesis. After it returns, review the `conflict_summary_with_resolutions`. Verify resolutions align with the design doc. Correct any wrong resolutions by editing the relevant section in the knowledge file.
 
 **Verification:** A file exists at `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md` after this step.
 
 | Thought that means STOP | Reality |
 |---|---|
 | "This layer is simple, nothing to curate" | Every session produces knowledge (patterns, gotchas, utilities). Curate it. |
-| "I'll pass the status files through directly" | You are the engineering lead. Curate — deduplicate, filter, resolve conflicts. Don't pass raw. |
+| "I'll skip reviewing the conflict summary" | You have context the curator lacked (design doc intent, escalation outcomes). Review the resolutions. |
 | "The next layer doesn't depend on this layer" | Knowledge includes project-wide conventions, not just direct dependencies. |
 
 #### 4l. Report Progress
@@ -427,7 +428,7 @@ These are real failure modes observed in production runs. If you catch yourself 
 | Skip the setup command | Backend has no schema. Every QA gate fails. Every fixer fails. All sessions wasted. |
 | Use Explore instead of audit skill | Quick scan misses convention drift, DRY violations, security gaps. Compound issues propagate to later layers. |
 | Inject skip instructions into QA prompt | QA agent skips valid tests. Features ship untested. User discovers bugs in production. |
-| Evaluate audit findings without loading receiving-review skill | You dismiss everything with banned rationalizations. The skill contains the authoritative decision tree. Load it first. |
+| Evaluate audit findings yourself instead of using the coherence-screener | The screener has the authoritative decision tree baked in. Trust the dispatch, not your own rationalization. |
 | Dismiss findings without proven harm | Real issues propagate. Later layers build on broken foundations. The fixer never runs. |
 | Skip audits for single-session layers | Cross-layer issues go undetected. Architecture drifts from prior layers. |
 | Build briefs manually instead of using skill | Missing sections (standards, test baseline, knowledge). Session agents fail or produce lower quality. |

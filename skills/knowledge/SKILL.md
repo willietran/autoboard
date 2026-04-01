@@ -11,91 +11,33 @@ Synthesize what this layer built and brief the next layer with what they need to
 
 ---
 
-## Step 1: Gather Raw Knowledge
+## Dispatch Knowledge Curator
 
-1. Read the `## Knowledge` section from EACH completed session's status file in this layer:
-   - Path: `docs/autoboard/{slug}/sessions/s{N}-status.md`
-   - Extract only the Knowledge section — ignore other status fields
-2. Read the curated knowledge from the previous layer (if any):
-   - Path: `docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md`
-   - If this is Layer 0 (first layer), there is no prior knowledge — skip this step
+Dispatch the `autoboard:knowledge-curator` agent via the Agent tool with model `explore-model` and these inputs:
 
----
+- Session status file paths: `docs/autoboard/{slug}/sessions/s{N}-status.md` for each completed session in this layer
+- Prior layer knowledge path: `docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md` (or note "first layer" if Layer 0)
+- Manifest path: `docs/autoboard/{slug}/manifest.md`
+- Design doc path: `docs/autoboard/{slug}/design.md`
+- Output file path: `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`
+- Decisions file path: `docs/autoboard/{slug}/decisions.md`
 
-## Step 2: Synthesize
+The agent reads all session status files and prior knowledge, synthesizes with deduplication, conflict detection, and resolution, then writes the curated knowledge file and appends to the decisions log.
 
-Apply these transformations to produce a curated brief:
-
-### Deduplication
-
-If multiple sessions discovered the same pattern, utility, or convention, mention it once with the canonical location. Do not repeat the same discovery from each session's perspective.
-
-### Relevance Filtering
-
-For each next-layer session, check which prior sessions it depends on (from the manifest's `depends` field). Prioritize knowledge from direct dependencies. Include knowledge from non-dependencies only if it is broadly relevant (shared utilities, project-wide conventions, new test patterns).
-
-### Cross-Session Conflict Detection
-
-If sessions established conflicting patterns (different error handling, naming conventions, file organization), flag the conflict and declare which pattern the next layer should follow:
-
-```
-**Convention conflict detected:**
-- S1 used `ConvexError` for API errors (`convex/tasks.ts:45`)
-- S2 used raw `throw new Error()` (`convex/users.ts:23`)
-- **Resolution:** Use S1's pattern (`ConvexError` with reason string). S2's approach will be corrected by the coherence fixer.
-```
-
-Do not leave conflicts unresolved — pick the better pattern and state it clearly.
-
-### Test Quality Patterns
-
-If the layer's coherence audit flagged test quality issues (or the fixer resolved them), capture what was learned:
-
-```
-**Test quality patterns established:**
-- {What test patterns were established — e.g., "All API handler tests include error path tests for 400 and 500 responses"}
-- {What anti-patterns were caught and fixed — e.g., "Happy-path-only tests for form validation were flagged; error path tests added for empty fields, invalid email, duplicate entries"}
-- {TDD discipline notes — e.g., "Browser test scenarios from the manifest must be covered in handler-level tests, not just asserted via browser"}
-```
-
-Even if no test quality issues were flagged, note any test patterns that sessions established that the next layer should follow. Consistency in test style prevents future coherence issues.
-
-### Orchestrator-Added Context
-
-Add brief notes connecting the dots between sessions when it helps the next layer understand how pieces fit together:
-
-```
-S1 created `lib/auth.ts` with `authenticatedQuery()` and `authenticatedMutation()`.
-S4 MUST use these for all protected routes — do not create a separate auth wrapper.
-```
+It returns: `conflict_summary_with_resolutions` for your review.
 
 ---
 
-## Step 3: Write Curated Knowledge
+## Validate Curator Output
 
-Write the synthesized knowledge to:
+Review the `conflict_summary_with_resolutions`. For each conflict resolution:
+- Does the chosen pattern align with the design doc?
+- Does the resolution correctly identify which session's pattern to follow?
+- Are there conflicts the curator missed that you noticed during the run?
 
-```
-docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md
-```
+If any resolution is wrong, correct it by editing the relevant section in the knowledge file at `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`. You have context the curator lacked (design doc intent, escalation outcomes, manifest-wide dependency knowledge).
 
-This file is what the session-spawn skill pastes into next-layer session briefs under `## Knowledge from Prior Sessions`.
-
----
-
-## Step 4: Record Architectural Decisions
-
-If any sessions noted architectural decisions in their status files, append them to the decisions log:
-
-```
-docs/autoboard/{slug}/decisions.md
-```
-
-Format:
-```markdown
-## Layer {N} Complete ({ISO date})
-- {decision from session status}
-```
+Verify the knowledge file exists at `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`.
 
 ---
 

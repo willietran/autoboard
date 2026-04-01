@@ -52,19 +52,25 @@ The audit skill spawns parallel dimension agents (one per dimension), each scope
 
 ## Process COHERENCE-REPORT
 
-**You are not done.** The COHERENCE-REPORT is an intermediate result, not a deliverable. Act on it immediately — do not stop, do not summarize to the user and wait, do not end your turn.
+**You are not done.** The COHERENCE-REPORT is an intermediate result, not a deliverable. Act on it immediately - do not stop, do not summarize to the user and wait, do not end your turn.
 
-### No Findings Survive Pre-Screening
+### Dispatch Coherence Screener
 
-Proceed to QA gate or knowledge curation. No tracking action needed — coherence issues are not pre-created, so there is nothing to close.
+Dispatch the `autoboard:coherence-screener` agent via the Agent tool with model `code-review-model` and these inputs:
 
-### Findings Survive Pre-Screening (BLOCKING or INFO)
+- COHERENCE-REPORT text (the full `~~~COHERENCE-REPORT` block)
+- Design doc path: `docs/autoboard/{slug}/design.md`
+- Manifest path: `docs/autoboard/{slug}/manifest.md`
 
-Route to the coherence-fixer. The fixer handles all surviving findings — BLOCKING and INFO alike. The run skeleton handles this routing — your job is to signal the result.
+The screener has the receiving-review decision tree baked in. It applies the decision tree to each finding and returns a structured verdict with surviving and dismissed findings. You do NOT need to load `/autoboard:receiving-review` for coherence processing.
 
-The pipeline is gated until all surviving findings are resolved. No distinction between BLOCKING and INFO for gating — any unfixed finding is a pattern the next layer's sessions might copy or drift from.
+### Route Based on Verdict
 
-Do NOT attempt to fix issues yourself — the fixer needs the full session workflow. Do NOT report the findings to the user and stop — the fixer must be dispatched now.
+**CLEAR (no findings survive):** Proceed to QA gate or knowledge curation. No tracking action needed - coherence issues are not pre-created, so there is nothing to close.
+
+**FIX_NEEDED (findings survive):** Route to the coherence-fixer. The fixer handles all surviving findings - BLOCKING and INFO alike. The pipeline is gated until all surviving findings are resolved.
+
+Do NOT attempt to fix issues yourself - the fixer needs the full session workflow. Do NOT report the findings to the user and stop - the fixer must be dispatched now.
 
 **Tracking (if active):** Create an on-demand issue for the fixer:
 
@@ -76,9 +82,9 @@ Do NOT attempt to fix issues yourself — the fixer needs the full session workf
    ```
    move-ticket(coherence-issue, Implementing)
    ```
-3. Note the issue number and item ID — the coherence-fixer skill needs these for the fixer brief's `## Tracking` section.
+3. Note the issue number and item ID - the coherence-fixer skill needs these for the fixer brief's `## Tracking` section.
 
-**Key design decision:** Coherence audit issues are NOT pre-created during setup. They are created on-demand only when findings survive pre-screening and trigger a fixer. Most layers pass cleanly — pre-creating issues would just create noise that gets immediately closed.
+**Key design decision:** Coherence audit issues are NOT pre-created during setup. They are created on-demand only when findings survive screening and trigger a fixer. Most layers pass cleanly - pre-creating issues would just create noise that gets immediately closed.
 
 ---
 

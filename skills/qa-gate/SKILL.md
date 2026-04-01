@@ -167,67 +167,52 @@ If tracking is active: `close-ticket(qa-gate, "{QA-REPORT contents}")`, `move-ti
 
 ---
 
-## On QA Fail — Validation Pipeline
+## On QA Fail — Validate and Route
 
-**Do NOT blindly trust the QA agent's failure classification.** The orchestrator must validate every failure claim before routing. QA agents have been known to fabricate "infrastructure failure" claims to avoid reporting criterion failures.
+**Do NOT blindly trust the QA agent's failure classification.** Dispatch the validator before routing. QA agents fabricate "infrastructure failure" claims to avoid reporting criterion failures.
 
-### Step 1 — Parse the QA-REPORT
+### Step 1 — Dispatch QA Validator
 
-Extract which criteria failed and the reason given for each failure.
+Dispatch the `autoboard:qa-validator` agent via the Agent tool with model `qa-model` and these inputs:
 
-### Step 2 — Apply the Infrastructure Failure Allowlist
+- QA-REPORT text (the full `~~~QA-REPORT` block)
+- Expected skips (from manifest's `expected-skips` list)
+- Prior QA-REPORTs (from earlier runs at this same gate, if any - read from tracking comments or prior output)
+- Manifest session list with dependencies and layer assignments
+- Current layer number
 
-**ONLY** these qualify as genuine infrastructure failures:
-- No browser tool available (none detected and none configured via `browser-tool` in manifest)
-- Dev server process exited or never responded to health checks
-- Missing env vars that prevent the app from starting at all
+The agent cross-references reports and manifest to classify each failed criterion. It returns a structured verdict.
 
-Any other claimed infrastructure reason is suspect and requires verification.
+### Step 2 — Route Based on Verdict
 
-### Step 3 — Fabrication Detection
+**PASS:** The validator determined all failures are premature criteria or expected skips. Proceed as if QA passed. Document which criteria were deferred and to which sessions/layers.
 
-If the claimed failure reason is NOT on the allowlist, verify it yourself. Do not trust the QA agent's classification.
+**GENUINE_FAIL:** Real code failures. Dispatch fixer immediately via `/autoboard:qa-fixer`. Do NOT ask the user. Do NOT roll back - the fixer needs the merged code. Do NOT report and stop - dispatch now.
 
-**Browser tool claims** (e.g., "can't handle React", "incompatible with framework X", "unable to trigger events"):
-- Start the dev server yourself
-- Navigate to the app URL with the browser tool
-- If the page loads and renders, the tool works — the claim is fabricated
+If tracking is active: `post-comment(qa-gate, "Dispatching fixer for: {genuine_failures list}")`, `move-ticket(qa-gate, Implementing)`
 
-**Cross-reference prior runs:** If a prior QA-REPORT at the same gate shows browser testing worked (pages navigated, forms submitted, criteria tested), that's additional evidence the claim is fabricated. No need to re-verify yourself in this case.
+**FABRICATION:** A prior report contradicts the QA agent's infrastructure claim. Respawn a **new QA agent** with the same QA brief plus this addendum:
 
-### Step 4 — Route Based on Verified Result
+> "A prior QA agent falsely claimed infrastructure failure. The orchestrator has verified the browser tool works. Test all acceptance criteria - no infrastructure excuses."
 
-**Verified fabrication** — the orchestrator confirmed the tool works (or prior run proves it):
+This counts as one fixer attempt (cannot loop forever). Log the override in a tracking comment.
 
-Log the override in a tracking comment: "Orchestrator verified browser tool is functional — QA agent's infrastructure claim was fabricated. Retasking."
+**INCONCLUSIVE_FABRICATION:** The validator cannot determine fabrication from cross-referencing alone (no prior reports at this gate). Verify yourself:
 
-Respawn a **new QA agent** with the same QA brief plus this addendum:
-> "A prior QA agent falsely claimed infrastructure failure. The orchestrator has verified the browser tool works. Test all acceptance criteria — no infrastructure excuses."
+1. Start the dev server
+2. Navigate to the app URL with the browser tool
+3. If the page loads and renders, the tool works - treat as FABRICATION above
+4. If verified broken, treat as genuine infrastructure failure - report to user and **BLOCK**
 
-This counts as one of the 5 fixer attempts (cannot loop forever). Kill the dev server you started for verification before spawning.
+Kill the dev server after verification before spawning any new QA agent.
 
-**Genuine infrastructure failure** (on the allowlist, or orchestrator's own verification confirmed it):
+**PREMATURE:** All testable criteria passed; failures test later-layer functionality. Pass the gate. Document which criteria were deferred and to which sessions/layers.
 
-This is NOT a code issue. No fixer can help. Report the failure to the user with the exact missing prerequisite and how to fix it. The run is **BLOCKED** at this gate until the user resolves the infrastructure issue. No sessions after this gate will execute.
-
-If tracking is active: `post-comment(qa-gate, "{failure details}")`, `move-ticket(qa-gate, Failed)`
-
-### Step 5 — Premature Criteria Assessment
-
-**Before dispatching a fixer, assess whether the failures are real.** You have the manifest, the session/layer structure, and the QA results. Use your judgment:
-
-- Do the failed criteria test functionality from sessions that haven't run yet? If criteria test UI pages from sessions in later layers, those aren't code failures — the manifest criteria were premature.
-- Defer premature criteria to the next gate after the relevant sessions complete. Log what you deferred and why.
-- If ALL testable criteria passed and the failures are all premature criteria, **pass the gate**. Document your reasoning.
-- If some failures are genuine code issues, dispatch a fixer for those only.
-
-### Step 6 — Route Genuine Code Failures
-
-**Acceptance criteria failure or regression** (genuine code failure after your assessment):
-
-Auto-dispatch a fixer agent immediately via the qa-fixer skill. Do NOT roll back — the fixer needs the merged code. Do NOT ask the user for permission — just fix it. Do NOT report the failures and stop — dispatch the fixer now.
-
-If tracking is active: `post-comment(qa-gate, "Dispatching fixer agent for the failures above.")`, `move-ticket(qa-gate, Implementing)`
+**MIXED:** Route each category separately:
+- Genuine failures -> dispatch fixer for those criteria only
+- Premature criteria -> defer and document
+- Fabrication -> log and respawn if needed
+- Handle the most severe category first (genuine > fabrication > premature)
 
 ---
 

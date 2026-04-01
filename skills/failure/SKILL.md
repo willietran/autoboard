@@ -11,32 +11,33 @@ A session on your team failed. Before deciding what to do, understand what happe
 
 ---
 
-## Step 1: Read Failure Context
+## Step 1: Gather Evidence
 
-Gather everything available for the failed session:
+Dispatch the `autoboard:evidence-gatherer` agent via the Agent tool with model `explore-model` and these inputs:
 
-1. **Bash exit code and output tail** from `/tmp/autoboard-{slug}-s{N}-output.jsonl`
-2. **Session status file** (if written): `docs/autoboard/{slug}/sessions/s{N}-status.md` in the worktree at `/tmp/autoboard-{slug}-s{N}/`
-3. **Git log on session branch**: `git log autoboard/{slug}-s{N} --oneline` — check if any tasks committed before failure
-4. **Session progress file**: `/tmp/autoboard-{slug}-progress/s{N}.md`
+- Session ID and slug
+- JSONL output path: `/tmp/autoboard-{slug}-s{N}-output.jsonl`
+- Status file path: `docs/autoboard/{slug}/sessions/s{N}-status.md` (in worktree `/tmp/autoboard-{slug}-s{N}/`)
+- Git branch name: `autoboard/{slug}-s{N}`
+- Progress file path: `/tmp/autoboard-{slug}-progress/s{N}.md`
 
-Check ALL four sources. A crashed session may have committed work before dying.
+The agent reads all four evidence sources and returns a compressed structured summary with: `error_excerpts`, `failed_phase`, `tasks_committed`, `preliminary_classification`, `suggested_retry_approach`, `has_escalation`, `escalation_detail`, `permission_denied_command`.
 
 ---
 
 ## Step 2: Classify Failure
 
-Read the evidence from Step 1 and classify into one of four categories:
+Use the evidence summary from Step 1 to classify into one of four categories:
 
 ### 2a. Permission Denial
 
-If the output contains permission denial indicators ("permission denied", "auto-denied", "not allowed", "tool not permitted"), this is a permissions issue, not a code issue.
+If `preliminary_classification` is `permission_denial` (or `error_excerpts` contain "permission denied", "auto-denied", "not allowed", "tool not permitted"), this is a permissions issue, not a code issue.
 
 **Do NOT retry.** Retrying with the same permissions will hit the same denial. Report to the user immediately:
 
 ```
 S{N} ({focus}) failed — a tool was denied by session permissions.
-Denied command: {extract the denied command from the output}
+Denied command: {from evidence summary's permission_denied_command}
 
 To fix: add the matching Bash rule to docs/autoboard/{slug}/session-permissions.json
 Example: "Bash(docker compose *)"
@@ -49,9 +50,9 @@ Stop processing this session. Wait for user action.
 
 ### 2b. Escalation (Review Dispute)
 
-If the session status file exists and contains `Status: escalation`, this is NOT a failure — it is a review dispute the session could not resolve after 3 rounds. Do NOT decrement retry count.
+If `has_escalation` is `true` (or `preliminary_classification` is `escalation`), this is NOT a failure — it is a review dispute the session could not resolve after 3 rounds. Do NOT decrement retry count.
 
-Read the `## Escalation` section from the status file, then arbitrate:
+Read `escalation_detail` from the evidence summary, then arbitrate:
 
 1. Read the reviewer's BLOCKING concerns
 2. Read the session agent's counterarguments
