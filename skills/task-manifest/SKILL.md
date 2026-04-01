@@ -92,7 +92,8 @@ Each task must include:
   - Happy path: {scenario}
   - Error path: {scenario}
   - Edge case: {scenario}
-- **Complexity Score:** N
+- **Complexity:** N
+- **Effort:** low | medium | high | max
 - **Suggested Session:** SN
 ```
 
@@ -166,14 +167,39 @@ For each task, write 2-4 purpose-driven exploration targets. Each target should 
 - Override based on design doc specifications
 
 ### Complexity Scoring
-| Score | Meaning |
-|-------|---------|
-| 1 | Trivial — config files, type-only modules |
-| 2 | Simple — straightforward implementation, few decisions |
-| 3 | Moderate — multiple components, some edge cases |
-| 4 | Complex — significant logic, error handling, integration |
-| 5 | Very complex — concurrent operations, state machines, protocols |
-| +1 | TDD overhead |
+
+Complexity measures **cognitive difficulty** - how hard you have to think, not how much work there is. A 200-line CRUD endpoint following an established pattern is low complexity. A 30-line race condition fix is high complexity.
+
+**Fibonacci scale (1, 2, 3, 5, 8):**
+
+| Score | Name | Anchor Example | What makes it this level |
+|-------|------|---------------|--------------------------|
+| 1 | **Rote** | Add a new field to an existing CRUD endpoint following the exact pattern of 5 existing fields | Zero novel decisions. Copy-paste-modify. |
+| 2 | **Guided** | Implement a new API endpoint similar to existing ones, but with a custom validation rule | One or two novel decisions within a known pattern. |
+| 3 | **Considered** | Build auth middleware integrating with an external provider, handling token refresh and error states | Multiple interacting concerns, but well-documented problem space. |
+| 5 | **Tricky** | Fix a race condition between concurrent DB writes, or design a state machine for a multi-step workflow | Requires holding multiple interacting states in your head. Non-obvious failure modes. |
+| 8 | **Novel** | Implement a custom conflict resolution algorithm for real-time collaborative editing | Requires inventing an approach. No established pattern to follow. |
+
+**Key discriminator:** "If I gave this task to a competent developer with full codebase access, how long would they spend *thinking* before they started typing?" Rote = seconds. Guided = minutes. Considered = an hour. Tricky = half a day. Novel = days.
+
+**Baseline anchoring:** Every manifest must identify one task as the **baseline** (complexity 2). This should be the most "standard" task - an endpoint, a component, a migration that follows an established pattern. All other tasks are scored *relative to this baseline*. Ask: "Is this task twice as hard to think about as the baseline? That's a 3. Does it have genuinely non-obvious failure modes? That's a 5."
+
+**Distribution check:** After scoring all tasks, verify the distribution. If more than 40% of tasks score 5 or 8, re-examine each one against the baseline. Most real projects are 60-70% complexity 1-3 with a few genuinely hard ones. A top-heavy distribution signals the scorer is conflating effort with complexity.
+
+### Effort Scoring
+
+Effort measures **volume of work** - files touched, lines of code, number of touch points. It is independent of complexity. Something can be a lot of work but not complex (high effort, low complexity), or very complex but small (low effort, high complexity).
+
+| Effort | Meaning | Heuristic |
+|--------|---------|-----------|
+| `low` | 1-2 files, under 100 lines of changes | Config tweak, single-function fix |
+| `medium` | 3-6 files, 100-400 lines | Standard feature: handler + types + tests |
+| `high` | 7-15 files, 400-1000 lines | Multi-module feature: routes + middleware + types + migrations + tests |
+| `max` | 15+ files or 1000+ lines | Large-scale refactoring, new subsystem, cross-cutting concern |
+
+**TDD bump:** TDD adds volume (test files, setup, red-green-refactor cycles), not cognitive difficulty. Non-Exempt TDD tasks get +1 effort tier (low->medium, medium->high, high->max, max stays max). This is the "adjusted effort."
+
+**Session effort** = max(adjusted effort) across all tasks in the session. This is what gets passed to the `--effort` flag.
 
 ### Session Grouping
 
@@ -192,13 +218,13 @@ One session = one agent = one worktree = sequential execution. There is no paral
 3. **Parallelism is secondary to domain cohesion**: When tasks share a domain, group them even if it sacrifices some parallelism. Only keep parallel tasks in separate sessions when they are in **different** domains. The decision test: if merging two parallel sessions doesn't increase the total number of dependency layers (because downstream tasks already wait for the later one), the parallelism loss is cosmetic — merge and get better context. Maximize file independence between parallel sessions that remain separate to avoid file-conflict serialization at runtime.
 
 4. **Session size caps** — hard limits to keep agents within ≤55% of context window:
-   - **Total adjusted complexity ≤ 8** (where adjusted = base complexity + 1 if TDD). This keeps sessions at ≤55% context utilization. A session MAY reach 10 when all tasks share a tight domain and the manifest explicitly notes it as a high-context session with justification — but never above 10.
+   - **Total complexity ≤ 8** (raw Fibonacci scores, no modifiers). This keeps sessions at ≤55% context utilization. A session MAY reach 10 when all tasks share a tight domain and the manifest explicitly notes it as a high-context session with justification — but never above 10.
    - **Max 4 tasks per session** (5+ only when all tasks are complexity ≤2 in one narrow domain)
    - **Max 1 task with complexity ≥5 per session**
    - **Max 3 TDD tasks per session** (TDD doubles exploration/verification cycles)
 
 5. **Dependency chain grouping**: Strict chains (A→B→C with no fan-out from intermediate nodes) belong in one session ONLY when all tasks share the same domain AND similar complexity levels. Split chains at:
-   - **Complexity boundaries** (going from 1-2 to 4+ is a natural split)
+   - **Complexity boundaries** (going from 1-2 to 5+ is a natural split)
    - **Domain transitions** (scaffolding → business logic → API wiring)
    - **Multi-consumer enablers** (tasks that unblock 3+ downstream tasks) should be fast standalone sessions so dependents can start ASAP — e.g., shared types, scaffolding, config
    - **Single-consumer enablers** (tasks that only unblock one downstream task) should merge with their consumer — the agent gets context from building the enabler, and no other task is waiting — e.g., crypto utils that only feed into auth
@@ -218,16 +244,16 @@ One session = one agent = one worktree = sequential execution. There is no paral
 
 #### Session Table Format
 
-The sessions table must show task complexities, total, domain label, and effort level:
+The sessions table must show task complexities (Fibonacci), effort, domain label, and rationale:
 
 ```markdown
 | Session | Tasks | Complexity | Domain | Effort | Rationale |
 |---------|-------|-----------|--------|--------|-----------|
-| S1 | T1 (2), T2 (3) | 5 | Data layer | high | Sequential chain, max task complexity 5 |
-| S2 | T3 (4) | 4 | Auth | medium | Standalone — complexity 4 + TDD, domain-isolated |
+| S1 | T1 (2), T2 (3) | 5 | Data layer | high | Sequential chain, shared schema context |
+| S2 | T3 (1) | 1 | Auth | medium | Rote endpoint, but TDD bumps effort low->medium |
 ```
 
-**Effort auto-assignment:** Default effort is `medium`. Sessions with max task complexity 4-5 get auto-bumped to `high`. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
+**Session effort:** max(adjusted effort) across all tasks in the session. Adjusted effort = base effort + TDD bump. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
 
 ### Architectural Foundations
 
@@ -397,7 +423,7 @@ After generating the manifest:
 1. Dispatch the `autoboard:plan-reviewer` agent via the Agent tool (max 3 rounds). Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
    - **QA acceptance criteria thoroughness** — do criteria test complete flows (signup -> redirect -> dashboard), not isolated actions ("user can sign up")? Do they include negative cases for security-critical flows? Does every user-facing feature from the design doc have at least one criterion?
    - **Dependency correctness** — apply the worktree test to every task. Would this task's agent succeed in a worktree containing only the repo's current main branch plus its completed dependencies? Are implicit dependencies captured (shared types, config, toolchains)?
-   - **Session sizing** — are complexity caps respected (adjusted complexity <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is effort level correct for the session's max task complexity?
+   - **Session sizing** — are complexity caps respected (raw Fibonacci sum <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is effort independently scored per-task (not derived from complexity)? Does the complexity distribution pass the 40% check (no more than 40% of tasks at 5+)?
    - **Session grouping quality** — domain cohesion over parallelism? No 1:1 task-to-session anti-pattern? Cross-session file independence (no overlapping creates/modifies without serialization)?
    - **QA gate placement** — gates at the right layer boundaries? Not over-gated? Acceptance criteria testable at the gate boundary (not testing UI before the UI layer ships)?
    - **Architectural foundations** — shared utilities extracted to early-layer foundation tasks? Convention seeding in first sessions? Security parity across similar endpoints?

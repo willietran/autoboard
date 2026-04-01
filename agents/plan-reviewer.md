@@ -45,7 +45,7 @@ For each **active** quality dimension, verify the plan accounts for it:
 
 Skip checks for disabled dimensions. Don't require every dimension to be exhaustively addressed — the plan should **account for** relevant dimensions, not write a thesis on each one.
 
-**Proportionality**: Scale review depth to task complexity. Simple tasks (config changes, single-file edits, prompt tweaks) need scope/correctness/dependency checks — not exhaustive quality dimension audits.
+**Proportionality**: Scale review depth to task complexity and effort. Simple tasks (config changes, single-file edits, prompt tweaks) need scope/correctness/dependency checks — not exhaustive quality dimension audits.
 
 ## Output Format
 

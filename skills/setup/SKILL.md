@@ -70,7 +70,7 @@ For backward compatibility: `github-project: true` is treated as `tracking-provi
 
 Each session is marked with `## Session S<N>: <focus>` and contains:
 - `**Depends on:**` — list of session IDs this session requires
-- `**Tasks:**` — task list with complexity scores and TDD phases
+- `**Tasks:**` — task list with complexity scores, effort levels, and TDD phases
 
 ### QA Gates
 
