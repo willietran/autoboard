@@ -23,7 +23,7 @@ Use the earliest checkpoint SHA from the run (the commit before Layer 0's merges
 
 **Verification:** You must have a `~~~COHERENCE-REPORT` block after this step. If you do not have one, you did not run the audit correctly. Go back and run it.
 
-If BLOCKING issues are found, dispatch `/autoboard:coherence-fixer` — same retry logic as layer coherence audits (up to 5 consecutive non-progress attempts, 15 total). All BLOCKING issues must be resolved before proceeding to the final QA gate. If fixer limit reached, escalate to the user. Do NOT skip the audit and proceed to QA.
+If BLOCKING issues are found, dispatch `/autoboard:coherence-fixer` — same retry logic as layer coherence audits (up to 5 rounds, 3 consecutive non-progress cap). The fixer owns the retry loop — it groups findings, dispatches parallel fixers, and retries in rounds. All BLOCKING issues must be resolved before proceeding to the final QA gate. If round limit reached, escalate to the user. Do NOT skip the audit and proceed to QA.
 
 If no BLOCKING issues, proceed immediately to Step 2. Do not stop here — the audit is an intermediate step, not a deliverable.
 
@@ -47,7 +47,7 @@ Always run a final QA gate, even if the last layer already had one. Invoke `/aut
 - Include the `expected-skips` list from the manifest
 - Add this directive: `"This is the final QA gate before the feature ships. Generate comprehensive acceptance criteria from the design doc covering every user-facing feature end-to-end. Test all prior QA gate criteria plus any additional flows visible in the design doc. Nothing ships without verification."`
 
-The same PASS/FAIL rules apply. If the final QA fails, invoke `/autoboard:qa-fixer` — the same fixer flow (up to 5 consecutive non-progress attempts, 15 total) runs before asking the user.
+The same PASS/FAIL rules apply. If the final QA fails, invoke `/autoboard:qa-fixer` — the fixer owns the retry loop (up to 5 rounds, 3 consecutive non-progress cap) and dispatches parallel fixers before asking the user.
 
 ---
 

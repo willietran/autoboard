@@ -316,11 +316,11 @@ Invoke `/autoboard:qa-gate` via the Skill tool. The QA prompt is a FIXED TEMPLAT
 The qa-gate skill dispatches the `autoboard:qa-validator` agent internally to classify failures (fabrication detection, premature criteria, genuine failures). You route based on the validator's verdict - see the qa-gate skill for the full routing table.
 
 - **QA passed (or validator says PASS/PREMATURE):** Proceed to knowledge curation.
-- **QA failed with genuine code failures:** Invoke `/autoboard:qa-fixer` via the Skill tool. Do NOT ask the user - just fix it. The qa-fixer loops internally (fix -> re-run QA -> fix again) until the gate passes or 10 attempts are exhausted. Never ask the user during this loop.
+- **QA failed with genuine code failures:** Invoke `/autoboard:qa-fixer` via the Skill tool. Do NOT ask the user - just fix it. The qa-fixer owns the entire retry loop - it triages failures, dispatches parallel fixers, merges, re-runs the gate, and retries in rounds until the gate passes or 5 rounds are exhausted. Never ask the user during this loop.
 - **Infrastructure failure (verified via allowlist + self-check):** Report to user and block.
 - **Fabrication detected:** The qa-gate skill handles respawning the QA agent with an override message.
 
-**Verification:** After the qa-fixer skill returns, you must have a QA-REPORT with `Result: PASS`. The QA-REPORT is the source of truth - not the fixer's status file, not the fixer's commit message. If the final QA-REPORT says FAIL and the fixer limit is not reached, re-invoke `/autoboard:qa-fixer`. If the qa-fixer returned without reaching PASS or exhausting all 10 attempts, something went wrong - re-invoke it.
+**Verification:** After the qa-fixer skill returns, you must have a QA-REPORT with `Result: PASS`. The QA-REPORT is the source of truth - not the fixer's status file, not the fixer's commit message. If the final QA-REPORT says FAIL and the round limit is not reached, re-invoke `/autoboard:qa-fixer`. If the qa-fixer returned without reaching PASS or exhausting all 5 rounds, something went wrong - re-invoke it.
 
 | Thought that means STOP | Reality |
 |---|---|
