@@ -2,7 +2,7 @@
 
 **Give it a feature. Walk away. Come back to code a senior engineer would approve.**
 
-Autoboard is a Claude Code plugin that runs your entire build autonomously. You describe what you want, the orchestrator breaks it into parallel coding sessions, and every session is independently reviewed, tested, and audited before anything merges. No babysitting. No reviewing every diff. No waking up to a mess.
+Autoboard is a Claude Code plugin that runs your entire build autonomously. You describe what you want, the lead breaks it into parallel coding tasks, and every task is independently reviewed, tested, and audited before anything merges. No babysitting. No reviewing every diff. No waking up to a mess.
 
 It works because it applies the same principles Toyota used to revolutionize manufacturing: never let the builder inspect their own work, stop the line the moment something breaks, and never pass a defect downstream.
 
@@ -39,21 +39,19 @@ Three commands. The first two are interactive. The third runs autonomously.
 
 ```
 /autoboard:brainstorm     →  Design session with you. Produces design doc + quality standards
-/autoboard:task-manifest  →  Generates sessions, dependency graph, and QA gates
+/autoboard:task-manifest  →  Generates tasks, dependency graph, and QA gates
 /autoboard:run <project>  →  You walk away here. Orchestrator handles the rest.
 ```
 
 ### What Happens While You're Gone
 
-The orchestrator breaks your feature into parallel coding sessions, each running in its own git worktree with a fresh context window. No agent ever gets dumb from a bloated context. No agent ever reviews its own work.
+The lead breaks your feature into parallel coding tasks via Agent Teams. Each teammate works in its own git worktree with a fresh context window. A centralized planning subagent explores the codebase and writes plans for all tasks -- teammates just execute. No agent ever gets dumb from a bloated context. No agent ever reviews its own work.
 
-Every session follows the same enforced workflow:
+The lead orchestrates each layer: **Plan** (centralized) -> **Plan Review** -> **Implement** (parallel teammates) -> **Merge** -> **Code Review** -> **Cohesion Audit** -> **Build Verification** -> **Functional QA** -> **Knowledge Curation**
 
-**Explore** &rarr; **Plan** &rarr; **Plan Review** &rarr; **Implement** &rarr; **Verify** &rarr; **Code Review** &rarr; **Commit**
+Plan Review and Code Review are blocking gates run by independent reviewer agents. The lead applies a critical thinking protocol to evaluate findings -- reviews are a technical debate, not a rubber stamp.
 
-Plan Review and Code Review are blocking gates run by independent reviewer agents. The session agent is required to push back on bad feedback rather than blindly accepting. Reviews are a technical debate, not a rubber stamp.
-
-Between each layer of sessions, the orchestrator runs automated QA (build, tests, browser smoke tests) and a 13-dimension coherence audit to catch cross-session issues like DRY violations, architecture drift, and naming inconsistencies. If anything fails, a fixer agent resolves it before downstream work begins. No defect passes downstream.
+Between each dependency layer, the lead runs automated QA (build, tests, browser smoke tests) and a 13-dimension coherence audit to catch cross-task issues like DRY violations, architecture drift, and naming inconsistencies. If anything fails, a fixer teammate resolves it before downstream work begins. No defect passes downstream.
 
 [Anthropic's research on long-running agent harnesses](https://www.anthropic.com/engineering/harness-design-long-running-apps) independently validated this architecture. Separating generation from evaluation is the single most effective lever for preventing quality degradation.
 
@@ -63,8 +61,8 @@ Design Doc → Task Manifest
           ┌──────┴──────┐
           │  LAYER 0    │
           ├─────────────┤
-          │ S1: Data    │
-          │ S2: Auth    │  ← parallel
+          │ T1: Data    │
+          │ T2: Auth    │  <- parallel
           └──────┬──────┘
                  │
      ┌───────────┴───────────┐
@@ -75,8 +73,8 @@ Design Doc → Task Manifest
           ┌──────┴──────┐
           │  LAYER 1    │
           ├─────────────┤
-          │ S3: API     │
-          │ S4: Logic   │  ← parallel
+          │ T3: API     │
+          │ T4: Logic   │  <- parallel
           └──────┬──────┘
                  │
      ┌───────────┴───────────┐
@@ -87,7 +85,7 @@ Design Doc → Task Manifest
           ┌──────┴──────┐
           │  LAYER 2    │
           ├─────────────┤
-          │ S5: Dashboard│
+          │ T5: Dashboard│
           └──────┬──────┘
                  │
      ┌───────────┴───────────┐
@@ -108,13 +106,13 @@ QA agents lie. They claim "infrastructure failure" when they can't figure out ho
 | Capability | GSD | Autoboard |
 |---|---|---|
 | Can you walk away? | No. ~15 commands to drive each phase | Yes. 3 commands, then autonomous |
-| Context management | Fresh 200k context per task | Fresh `claude -p` per session in isolated worktrees |
+| Context management | Fresh 200k context per task | Fresh teammate per task via Agent Teams in isolated worktrees |
 | Plan review | Plan-checker validation loop (up to 3 iterations) | Independent plan-reviewer subagent, max 3 adversarial rounds |
 | Code review | User acceptance testing | Independent code-reviewer subagent, mandatory before every commit |
 | TDD | Not enforced | Per-task TDD phases where marked in manifest |
 | Automated QA | Debug agents diagnose failures | Build + test + browser smoke tests between every layer |
-| Cross-session coherence | STATE.md tracks decisions | 13-dimension audits at every layer boundary |
-| Failure recovery | Debug agents + retry | Full fixer agents with complete 7-phase session workflow |
+| Cross-task coherence | STATE.md tracks decisions | 13-dimension audits at every layer boundary |
+| Failure recovery | Debug agents + retry | Full fixer teammates with diagnose-first protocol |
 | Knowledge curation | STATE.md + SUMMARY.md files | Deduplicated, conflict-resolved briefings between layers |
 | Fabrication detection | Not addressed | Validates QA claims against allowlist, catches fake passes |
 
@@ -125,7 +123,7 @@ Quality is enforced across 13 configurable dimensions, tuned per-project during 
 | Dimension | What It Checks |
 |---|---|
 | Code Organization | File structure, single responsibility, naming |
-| DRY / Code Reuse | Duplication across sessions, shared patterns |
+| DRY / Code Reuse | Duplication across tasks, shared patterns |
 | Error Handling | Consistent error patterns, recovery paths |
 | Security | Input validation, injection prevention, secret management |
 | Test Quality | Coverage, edge cases, error paths (not just happy path) |
@@ -138,20 +136,21 @@ Quality is enforced across 13 configurable dimensions, tuned per-project during 
 | Config Management | Environment handling, secrets separation |
 | Developer Infrastructure | Build tooling, scripts, local setup |
 
-Standards are enforced by independent reviewer agents and coherence audits. Session agents cannot opt themselves out.
+Standards are enforced by independent reviewer agents and coherence audits. Teammates cannot opt themselves out.
 
 ## The Orchestrator
 
-The orchestrator does not write code. It manages the agents that do. It decides which sessions to retry, whether a reviewer's concern is valid, whether a QA agent is lying about an infrastructure failure, and what knowledge the next layer of agents needs to do their job.
+The lead does not write code. It manages the agents that do. It decides which tasks to retry, whether a reviewer's concern is valid, whether a QA agent is lying about an infrastructure failure, and what knowledge the next layer of agents needs to do their job.
 
-| Orchestrator | Session agents |
+| Lead | Teammates / Subagents |
 |---|---|
-| Parses manifest, builds dependency graph | Explore codebase, plan implementation |
-| Creates worktrees, spawns sessions | Execute tasks (TDD, implementation, tests) |
-| Merges session branches to feature branch | Spawn independent plan and code reviewers |
-| Runs QA gates and coherence audits | Run build verification within worktree |
-| Handles failures (retry, dispatch fixer, escalate) | Diagnose and fix issues within session scope |
-| Curates knowledge, updates progress | Write session status files and learnings |
+| Parses manifest, computes dependency layers | |
+| Dispatches planning subagent per batch | Explore codebase, write implementation plans |
+| Creates worktrees, spawns teammates | Implement one task each, verify, commit |
+| Merges task work to feature branch | |
+| Dispatches code reviewer, QA, cohesion audits | Review diffs, run tests, check consistency |
+| Handles failures (retry, dispatch fixer, escalate) | Diagnose and fix issues within task scope |
+| Curates knowledge between layers | Write discoveries, curate for next layer |
 
 ## Commands
 
@@ -159,7 +158,7 @@ The orchestrator does not write code. It manages the agents that do. It decides 
 |---|---|---|
 | `/autoboard:brainstorm` | Interactive design session | `design.md` + `standards.md` |
 | `/autoboard:standards` | Configure quality dimensions | `standards.md` |
-| `/autoboard:task-manifest` | Generate implementation plan | `manifest.md` with sessions, deps, QA gates |
+| `/autoboard:task-manifest` | Generate implementation plan | `manifest.md` with tasks, deps, QA gates |
 | `/autoboard:run <project>` | Launch orchestrator | PR-ready feature branch |
 
 ## Status
@@ -175,7 +174,7 @@ Autoboard builds on ideas and patterns from [Obra:Superpowers](https://github.co
 - **Code reviewer agent** (`agents/code-reviewer.md`): independent code review with quality checks
 - **Systematic debugging skill** (`skills/diagnose/`): root cause investigation methodology
 
-If you like what Autoboard does with session orchestration, check out Superpowers for a broader collection of Claude Code skills.
+If you like what Autoboard does with agent orchestration, check out Superpowers for a broader collection of Claude Code skills.
 
 ## License
 

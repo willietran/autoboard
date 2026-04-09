@@ -2,42 +2,42 @@
 
 ## User Commands
 
-- `/autoboard:brainstorm` — Interactive design session producing design doc + standards
-- `/autoboard:standards` — Configure quality dimensions interactively
-- `/autoboard:task-manifest` — Generate task manifest from design doc
-- `/autoboard:run` — Launch orchestrator
+- `/autoboard:brainstorm` -- Interactive design session producing design doc + standards
+- `/autoboard:standards` -- Configure quality dimensions interactively
+- `/autoboard:task-manifest` -- Generate task manifest from design doc
+- `/autoboard:run` -- Launch orchestrator
 
-## Orchestrator Phases (internal, called by run)
+## Lead Phases (internal, called by run)
 
-- `setup` — Project resolution, manifest parsing, preflight checks
-- `session-spawn` — Build briefs, create worktrees, spawn session agents
-- `merge` — Squash merge sessions to feature branch
-- `coherence-audit` — Cross-session quality audit (wraps `/autoboard:audit`)
-- `coherence-fixer` — Fix blocking coherence issues
-- `qa-gate` — Acceptance testing and regression checks
-- `qa-fixer` — Fix QA gate failures
-- `knowledge` — Curate cross-session knowledge between layers
-- `failure` — Diagnose and handle failures
-- `completion` — Final cleanup and reporting
+- `setup` -- Project resolution, manifest parsing, preflight checks
+- `coherence-audit` -- Cross-task quality audit (wraps `/autoboard:audit`)
+- `coherence-fixer` -- Fix blocking coherence issues
+- `qa-gate` -- Acceptance testing and regression checks
+- `qa-fixer` -- Fix QA gate failures
+- `knowledge` -- Curate cross-layer knowledge between layers
+- `completion` -- Final cleanup and reporting
 
-## Session Agent Skills
+## Teammate/Subagent Skills
 
-- `session-workflow` — Full session lifecycle (Explore, Plan, Review, Implement, Verify, Code Review, Commit)
-- `verification` — Build/test verification protocol (preflight, light, full modes)
-- `receiving-review` — Critical thinking protocol for review feedback
+- `verification` -- Build/test verification protocol (preflight, light, full modes)
+- `verification-light` -- Build/test only verification for teammates
+- `receiving-review` -- Critical thinking protocol for review feedback
+- `diagnose` -- Root cause investigation protocol
 
-## Tracking Providers
+## Agents
 
-- `tracking-github` — GitHub Projects V2 progress tracking
+### Teammates (spawned via Agent Teams)
 
-## Review Agents
+- `autoboard-implementer` -- Default teammate (Sonnet, complexity 1-3)
+- `autoboard-implementer-opus` -- Opus teammate (complexity 5, effort high)
+- `autoboard-implementer-opus-max` -- Opus teammate (complexity 8, effort max)
 
-- `autoboard:plan-reviewer` - Plan review with quality dimension checks
-- `autoboard:code-reviewer` - Code review with quality dimension checks
+### Subagents (dispatched via Agent tool)
 
-## Orchestrator Agents
-
-- `autoboard:evidence-gatherer` - Compress failure evidence for orchestrator classification
-- `autoboard:qa-validator` - Validate QA-REPORT failures (fabrication, premature, genuine)
-- `autoboard:coherence-screener` - Pre-screen coherence findings via receiving-review decision tree
-- `autoboard:knowledge-curator` - Synthesize cross-session knowledge between layers
+- `autoboard-planner` -- Explore codebase, write batch implementation plans
+- `plan-reviewer` -- Plan review with quality dimension checks
+- `code-reviewer` -- Code review with quality dimension checks
+- `evidence-gatherer` -- Compress failure evidence for lead classification
+- `qa-validator` -- Validate QA-REPORT failures (fabrication, premature, genuine)
+- `cohesion-screener` -- Pre-screen coherence findings via receiving-review decision tree
+- `knowledge-curator` -- Synthesize cross-layer knowledge between layers

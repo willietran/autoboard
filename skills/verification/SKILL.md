@@ -237,7 +237,7 @@ Read the manifest's `env-template` field from the manifest config (frontmatter).
 
 - **No `env-template` field in manifest:** skip env check entirely — project doesn't use env vars.
 - **`env-template` field exists + `.env.local` missing + template file exists:** copy the template to `.env.local`. Tell the user to fill in real values before `/run` for full E2E QA.
-- **`env-template` field exists + `.env.local` missing + template file missing:** Generate the template file NOW. Read the project's design doc (referenced in the manifest) and parse it for all environment variables the project needs — API keys, database URLs, third-party credentials, feature flags. Write the template file (e.g., `.env.example`) with empty placeholder values and a comment header. Then copy it to `.env.local`. Do NOT skip this step or defer it to a session agent.
+- **`env-template` field exists + `.env.local` missing + template file missing:** Generate the template file NOW. Read the project's design doc (referenced in the manifest) and parse it for all environment variables the project needs — API keys, database URLs, third-party credentials, feature flags. Write the template file (e.g., `.env.example`) with empty placeholder values and a comment header. Then copy it to `.env.local`. Do NOT skip this step or defer it to a teammate.
 - **`.env.local` already exists:** report it exists. Do NOT overwrite.
 
 After creating or copying `.env.local`, ensure it's in `.gitignore`. If `.gitignore` doesn't exist, create it. If it exists but doesn't contain `.env.local`, append it. This prevents accidental commits of secrets.
@@ -257,7 +257,7 @@ Then read `.env.local` and provision empty variables. Do NOT just report a table
 
 4. After all vars are handled, **re-read `.env.local`** and confirm everything is set. List any that are still empty.
 
-Session agents run non-interactively (`claude -p`) — they cannot answer prompts. All provisioning that requires interaction must happen here in preflight. Do not defer it to session tasks.
+Teammates run non-interactively -- they cannot answer prompts. All provisioning that requires interaction must happen here in preflight. Do not defer it to tasks.
 
 **Convex provisioning** (when NEXT_PUBLIC_CONVEX_URL or CONVEX_DEPLOYMENT is empty):
 
@@ -269,7 +269,7 @@ Session agents run non-interactively (`claude -p`) — they cannot answer prompt
 
 ### Step 3: Run Setup Command
 
-If the manifest config includes a `setup` field, run it.
+If the manifest config includes a `setup-command` field (or `setup` for backward compatibility), run it.
 
 - Success → `Setup: OK ({command})`
 - Failure → `Setup: FAILED — {error}`. Tell the user what went wrong.
@@ -277,7 +277,7 @@ If the manifest config includes a `setup` field, run it.
 
 ### Step 4: Capture Test Baseline
 
-If the manifest includes a `verify` command, run it now and record which tests fail. This baseline lets session verification distinguish pre-existing failures from new regressions.
+If the manifest includes a `verify-command` (or `verify` for backward compatibility), run it now and record which tests fail. This baseline lets session verification distinguish pre-existing failures from new regressions.
 
 - Save failing test names/patterns to `docs/autoboard/{slug}/test-baseline.md`
 - If all tests pass, write "All tests pass — clean baseline"

@@ -11,7 +11,7 @@ You are running a thorough, evidence-based codebase quality audit. Unlike a sing
 
 - **No args** — audit the current working directory
 - **`--dimensions <list>`** — override auto-detection with a comma-separated list (e.g., `--dimensions security,dry-code-reuse,test-quality`)
-- **`--checkpoint <sha>`** — Layer coherence mode. Scopes the audit to changes since the given commit SHA while cross-referencing the full codebase. Produces a `COHERENCE-REPORT` instead of a scored audit report. Used by the orchestrator at layer boundaries to catch cross-session quality issues.
+- **`--checkpoint <sha>`** — Layer coherence mode. Scopes the audit to changes since the given commit SHA while cross-referencing the full codebase. Produces a `COHERENCE-REPORT` instead of a scored audit report. Used by the orchestrator at layer boundaries to catch cross-task quality issues.
 
 ## Step 1: Detect Project Structure
 
@@ -166,8 +166,8 @@ When `--checkpoint` is provided, use this prompt instead of the full audit promp
 ```
 You are checking a codebase for {DIMENSION_NAME} coherence issues introduced by recent changes.
 
-Multiple independent coding sessions just merged their work. Your job: find quality issues
-that arise from these sessions working in parallel — problems no individual session could catch.
+Multiple independent coding tasks just merged their work. Your job: find quality issues
+that arise from these tasks working in parallel -- problems no individual task could catch.
 
 ## Your Checklist
 
@@ -193,11 +193,11 @@ You MUST read this file before auditing. Do not proceed without it.
 2. Read the changed files to understand what was added or modified.
 3. Cross-reference against the FULL CODEBASE — not just the diff:
    - For each new function, utility, or component in the diff, grep the ENTIRE codebase for
-     similar implementations. If `lib/utils/formatDate.ts` already exists and a session created
+     similar implementations. If `lib/utils/formatDate.ts` already exists and a task created
      `helpers/date.ts`, that's a BLOCKING DRY violation.
    - For conventions (naming, error handling, file organization, import patterns), examine the
      EXISTING codebase patterns first. New code should match what's already established, not
-     just be internally consistent among sessions.
+     just be internally consistent among tasks.
    - For security, check existing routes/endpoints for auth patterns. New routes should have
      the same protections as existing similar routes.
 4. Quantify findings: "found in 3 files" is better than "some duplication exists."
@@ -207,10 +207,10 @@ You MUST read this file before auditing. Do not proceed without it.
 
 Mark BLOCKING for issues that meet any of these criteria:
 - **Build-breaking:** won't compile, creates import errors, breaks existing tests
-- **Agent-degrading:** will confuse, mislead, or slow down future AI sessions (dead code, naming inconsistencies, duplicated patterns, convention drift, unclear module boundaries, competing implementations)
+- **Agent-degrading:** will confuse, mislead, or slow down future AI agents (dead code, naming inconsistencies, duplicated patterns, convention drift, unclear module boundaries, competing implementations)
 - **User-impacting:** will hurt end-user experience in production (performance issues, missing error handling on user-facing paths, security gaps, bad data modeling)
 
-The test: "if nobody ever looks at this, will it cause a problem for either the next AI session or the end user?" If yes, BLOCKING.
+The test: "if nobody ever looks at this, will it cause a problem for either the next AI agent or the end user?" If yes, BLOCKING.
 
 Mark INFO only for truly cosmetic issues — stylistic preferences, minor formatting, things that don't affect agent navigation, code correctness, or end-user experience.
 
@@ -221,7 +221,7 @@ This is work-in-progress code being built incrementally. Do NOT flag:
 - Incomplete features planned for future layers
 - Pre-existing issues that were NOT caused or worsened by changes since the checkpoint
 - Aspirational improvements ("would be nice to have...")
-- Style preferences that don't affect cross-session coherence
+- Style preferences that don't affect cross-task coherence
 
 ## Anti-Bias Rules
 
