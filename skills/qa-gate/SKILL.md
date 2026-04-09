@@ -62,10 +62,8 @@ Agent(
   the specific error (not infrastructure failure, unless the dev server itself is down).
 
   - Design doc: {path to design doc, e.g. docs/autoboard/{slug}/design.md}
-  - Test baseline:
-    {Read docs/autoboard/{slug}/test-baseline.md and paste its COMPLETE content here verbatim.
-    Do NOT replace with a file path reference.
-    If the file does not exist or no baseline was captured, write 'no baseline captured'.}
+  - Test baseline file: {absolute path to docs/autoboard/{slug}/test-baseline.md}
+    Read this file with the Read tool. If the file does not exist, there is no baseline.
 
   Acceptance criteria for this QA gate:
   {paste the acceptance criteria from the manifest's QA gate marker}
@@ -73,21 +71,14 @@ Agent(
   Expected skips (user-acknowledged features that won't be tested):
   {paste the expected-skips section from the manifest, or 'none'}
 
-  Coherence audit results (from the layer coherence audit):
-  {paste the COHERENCE-REPORT block from the layer coherence audit.
-  Any BLOCKING items listed should already be fixed by the coherence fixer.
-  If you encounter issues that match unresolved BLOCKING items from this report, escalate as FAIL.}
+  Coherence audit results: {absolute path to docs/autoboard/{slug}/sessions/coherence-L{N}.md}
+  Read this file for the COHERENCE-REPORT. Any BLOCKING items should already be fixed by the coherence fixer.
+  If you encounter issues matching unresolved BLOCKING items, escalate as FAIL.
 
-  Critical user flows (from design doc):
-  {Read the design doc's ## Critical User Flows section and paste it here verbatim.
-  If the section does not exist, omit this block.
-  These are end-to-end flows you MUST test, including error paths.}
-
-  Key test scenarios for browser testing:
-  {Extract Key test scenarios from all manifest tasks marked Test approach: browser.
-  For each, include the task title and its scenarios.
-  If no tasks are marked browser, omit this block.
-  These scenarios tell you WHAT to test — not just happy paths but error paths and edge cases.}
+  Critical user flows and test scenarios:
+  Read the ## Critical User Flows section from the design doc at: {absolute path to design.md}
+  Read Key test scenarios from browser-marked tasks in the manifest at: {absolute path to manifest.md}
+  These tell you WHAT to test -- not just happy paths but error paths and edge cases.
 
   The verification skill will run build/test commands and, if qa-mode is full,
   start the dev server and run browser smoke tests in two phases:
@@ -149,13 +140,15 @@ Agent(
 
 ---
 
-## Post QA-REPORT as Comment
+## Save and Post QA-REPORT
 
-**Immediately** after receiving the QA subagent's output, extract the `~~~QA-REPORT` block and post it.
+**Immediately** after receiving the QA subagent's output, extract the `~~~QA-REPORT` block.
+
+Write it to `docs/autoboard/{slug}/sessions/qa-L{N}.md` so fixer briefs can reference it by path.
 
 If tracking is active: `post-comment(qa-gate, "{QA-REPORT contents}")`
 
-If you cannot extract the QA-REPORT block (subagent didn't follow the format), post the subagent's full final output — never fall back to a generic one-liner.
+If you cannot extract the QA-REPORT block (subagent didn't follow the format), post the subagent's full final output -- never fall back to a generic one-liner.
 
 ---
 

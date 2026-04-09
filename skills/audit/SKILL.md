@@ -65,7 +65,7 @@ Tell the user which dimensions will be audited and which were skipped (and why).
 
 Spawn ALL dimension agents in parallel using the Agent tool. Each agent is independent and read-only.
 
-**For each selected dimension**, read the full content of its `standards/dimensions/{name}.md` file and include it in the agent prompt.
+**For each selected dimension**, resolve the absolute path to its `standards/dimensions/{name}.md` file in the plugin directory (read from `/tmp/autoboard-plugin-dir`) and pass the path to the dimension agent. Do NOT paste the file content into the prompt -- the agent has Read tool access.
 
 **Dimension agent prompt template:**
 
@@ -75,7 +75,7 @@ You are a specialist — focus ONLY on your dimension. Be thorough, be specific,
 
 ## Your Checklist
 
-{PASTE FULL CONTENT OF standards/dimensions/{name}.md}
+Read the quality standards checklist from: {absolute path to plugin dir}/standards/dimensions/{name}.md
 
 ## Project Context
 
@@ -170,7 +170,7 @@ that arise from these sessions working in parallel — problems no individual se
 
 ## Your Checklist
 
-{PASTE FULL CONTENT OF standards/dimensions/{name}.md}
+Read the quality standards checklist from: {absolute path to plugin dir}/standards/dimensions/{name}.md
 
 {IF dimension is test-quality AND manifest has Key test scenarios:
 ## Project Test Scenarios

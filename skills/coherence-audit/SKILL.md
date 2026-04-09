@@ -54,6 +54,10 @@ The audit skill spawns parallel dimension agents (one per dimension), each scope
 
 **You are not done.** The COHERENCE-REPORT is an intermediate result, not a deliverable. Act on it immediately - do not stop, do not summarize to the user and wait, do not end your turn.
 
+### Save Report to Disk
+
+Write the COHERENCE-REPORT to `docs/autoboard/{slug}/sessions/coherence-L{N}.md` so fixer briefs can reference it by path instead of pasting it inline.
+
 ### Dispatch Coherence Screener
 
 Dispatch the `autoboard:coherence-screener` agent via the Agent tool with model `code-review-model` and these inputs:

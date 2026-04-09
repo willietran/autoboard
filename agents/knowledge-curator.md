@@ -126,7 +126,7 @@ The orchestrator reviews the conflict summary to validate resolutions. Keep it c
 ## Rules
 
 - Read ALL session status files before synthesizing - do not process them one at a time
-- Compress aggressively - the knowledge file is for next-layer sessions, not a historical record
+- Compress aggressively - target 4KB (~1000 tokens). If critical cross-session information would be lost at 4KB (e.g., 10+ shared utilities with complex signatures), allow up to 8KB with a note explaining why. Prioritize: shared utility signatures > conventions > gotchas > patterns. Drop anything downstream sessions can discover by reading the code
 - Every conflict must have a declared resolution with a reason
 - Do not pass session status files through verbatim - synthesize and deduplicate
 - Write files using Bash (cat/heredoc) to the exact paths provided in your input

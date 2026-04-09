@@ -83,7 +83,7 @@ Fix ONLY these items:
 
 {list of assigned findings with their dimension, severity, description, file locations, and evidence}
 
-The full COHERENCE-REPORT is below for context. Other fixers are handling:
+Read the full COHERENCE-REPORT from the file path in the Coherence Findings section below. Other fixers are handling:
 {for each other fixer: "- Fixer {K}: {dimension(s)} -- {brief summary of findings}"}
 
 Understanding what others are fixing helps you avoid conflicting changes.
@@ -96,8 +96,8 @@ You are the only fixer for this round. Fix all items listed below.
 
 ## Coherence Findings
 
-Coherence findings (full COHERENCE-REPORT):
-{paste the full COHERENCE-REPORT block verbatim -- not a paraphrased summary}
+Coherence report: {absolute path to docs/autoboard/{slug}/sessions/coherence-L{N}.md}
+Read this file for the full COHERENCE-REPORT.
 
 {For rounds > 0, also include:}
 ## Prior Round Summary
@@ -107,22 +107,11 @@ Round {R-1} resolved: {items}. Still failing: {items}.
 prior fixer's merge conflicted. Changes merged by other fixers since then:
 {diff summary from git diff ROUND_CHECKPOINT..HEAD}
 
-## Knowledge from Prior Sessions
+## Reference Files
 
-{Paste the curated knowledge from docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md
-(or the latest layer knowledge file). Coherence issues are cross-session by nature --
-the fixer benefits from understanding what patterns prior sessions established.
-If no knowledge file exists: "No prior knowledge."}
-
-Design doc: {path to design doc}
-
-## Test Quality Context
-
-{Read the design doc's ## Critical User Flows section and paste it here verbatim.
-If the section does not exist, omit this block.}
-
-{Read the manifest and extract all Key test scenarios fields from task records.
-If no tasks have Key test scenarios, omit this block.}
+Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md} (read with Read tool, or "No prior knowledge" if file doesn't exist)
+Design doc: {absolute path to design doc} (read ## Critical User Flows section for test context)
+Manifest: {absolute path to manifest.md} (read Key test scenarios from task records for test context)
 
 These inform test quality remediation -- if the BLOCKING findings include test quality issues,
 the fix should ensure tests cover these scenarios.
@@ -168,7 +157,7 @@ If tracking is disabled, omit the Tracking section entirely.
 Spawn all fixers in this round as **parallel background Bash commands**:
 
 ```bash
-bin/spawn-session.sh /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
+"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
   --model {model from frontmatter} \
   --cwd /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} \
   --settings "$PERM_FILE" \

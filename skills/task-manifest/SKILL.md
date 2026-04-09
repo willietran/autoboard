@@ -29,9 +29,9 @@ The manifest starts with YAML frontmatter that configures the orchestrator:
 ```yaml
 ---
 model: opus                    # Model for session agents
-qa-model: opus                 # Model for QA subagents
+qa-model: sonnet               # Model for QA subagents
 explore-model: haiku           # Model for Explore subagents
-plan-review-model: opus        # Model for plan reviewer subagents
+plan-review-model: sonnet      # Model for plan reviewer subagents
 code-review-model: sonnet      # Model for code reviewer subagents
 verify: npm install && npx tsc --noEmit && npm run build && npm test
 dev-server: npm run dev        # Command to start dev server for browser QA

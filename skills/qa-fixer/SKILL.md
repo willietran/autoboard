@@ -103,7 +103,7 @@ Fix ONLY these items:
 
 {list of assigned items with their criterion number, text, and evidence from the QA-REPORT}
 
-The full QA-REPORT is below for context. Other fixers are handling:
+Read the full QA-REPORT from the file path in the QA Findings section below. Other fixers are handling:
 {for each other fixer: "- Fixer {K}: {brief summary of their assigned items}"}
 
 Understanding what others are fixing helps you avoid conflicting changes.
@@ -116,8 +116,8 @@ You are the only fixer for this round. Fix all items listed below.
 
 ## QA Findings
 
-QA findings (full QA-REPORT):
-{paste the full QA-REPORT block verbatim -- not a paraphrased summary}
+QA report: {absolute path to docs/autoboard/{slug}/sessions/qa-L{N}.md}
+Read this file for the full QA-REPORT.
 
 {For rounds > 0, also include:}
 ## Prior Round Summary
@@ -130,18 +130,13 @@ prior fixer's merge conflicted. Changes merged by other fixers since then:
 Expected skips (user-acknowledged -- do NOT try to fix these):
 {paste the expected-skips section from the manifest, or 'none'}
 
-Design doc: {path to design doc}
+## Reference Files
 
-## Test Quality Context
-
-{Read the design doc's ## Critical User Flows section and paste it here verbatim.
-If the section does not exist, omit this block.}
-
-{Read the manifest and extract Key test scenarios from tasks marked Test approach: browser.
-If no tasks have browser test scenarios, omit this block.}
+Design doc: {absolute path to design doc} (read ## Critical User Flows section for test context)
+Manifest: {absolute path to manifest.md} (read Key test scenarios from browser-marked tasks for test context)
 
 These inform your fix -- if QA failures involve user flows or browser interactions,
-use these scenarios to understand what the expected behavior should be.
+read these files to understand what the expected behavior should be.
 
 Your job: fix the criteria that FAILED in your assignment. Do NOT attempt to
 fix EXPECTED SKIP criteria -- the user acknowledged those won't work yet.
@@ -172,12 +167,7 @@ disabling checks. The fix must be elegant, clean, and durable -- it
 should be indistinguishable from code written correctly the first time.
 If the root cause requires a significant refactor, do the refactor.
 
-## Knowledge from Prior Sessions
-
-{Paste the curated knowledge from docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md
-(or the latest layer knowledge file). QA fixes benefit from understanding what
-patterns prior sessions established.
-If no knowledge file exists: "No prior knowledge."}
+Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md} (read with Read tool, or "No prior knowledge" if file doesn't exist)
 
 ## Configuration
 
@@ -211,7 +201,7 @@ If tracking is disabled, omit the Tracking section entirely.
 Spawn all fixers in this round as **parallel background Bash commands**:
 
 ```bash
-bin/spawn-session.sh /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md \
+"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md \
   --model {model from frontmatter} \
   --cwd /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group} \
   --settings "$PERM_FILE" \

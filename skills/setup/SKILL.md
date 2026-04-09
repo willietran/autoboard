@@ -9,6 +9,28 @@ description: Resolve project, parse manifest, run preflight checks, and display 
 
 ---
 
+## Step 0: Resolve Plugin Directory
+
+Resolve the autoboard plugin directory and persist it for the entire run. All downstream skills (session-spawn, qa-fixer, coherence-fixer, failure) read from this file to find `bin/spawn-session.sh` and `config/`.
+
+```bash
+# Resolve autoboard plugin directory
+if [[ -f bin/spawn-session.sh ]]; then
+  AUTOBOARD_DIR="$(cd "$(dirname bin/spawn-session.sh)/.." && pwd)"
+elif command -v mdfind >/dev/null 2>&1; then
+  AUTOBOARD_DIR="$(dirname "$(dirname "$(mdfind -name 'spawn-session.sh' -onlyin "$HOME" 2>/dev/null | grep -m1 'autoboard/bin')")")"
+else
+  AUTOBOARD_DIR="$(dirname "$(dirname "$(find "$HOME" -maxdepth 6 -name 'spawn-session.sh' -path '*/autoboard/bin/*' -type f 2>/dev/null | head -1)")")"
+fi
+echo "$AUTOBOARD_DIR" > /tmp/autoboard-plugin-dir
+```
+
+Verify: `[[ -f "$AUTOBOARD_DIR/bin/spawn-session.sh" ]] && echo "OK: $AUTOBOARD_DIR" || echo "FAIL: could not find autoboard plugin directory"`
+
+If verification fails, ask the user for the plugin directory path.
+
+---
+
 ## Step 1: Resolve Project
 
 Resolve the project path from the argument:

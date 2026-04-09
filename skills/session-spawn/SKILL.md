@@ -54,13 +54,12 @@ if [[ ! -f "$PERM_FILE" ]]; then
 fi
 ```
 
-Resolve `$PLUGIN_DIR` by finding the autoboard plugin directory. The spawn script lives at `bin/spawn-session.sh` within the plugin. Use `dirname` on the script's path to find `bin/`, then go up one level:
+Read `$PLUGIN_DIR` from the temp file written by setup:
 ```bash
-PLUGIN_DIR="$(cd "$(dirname "$(readlink -f bin/spawn-session.sh)")/.." && pwd)"
+PLUGIN_DIR="$(cat /tmp/autoboard-plugin-dir)"
 ```
-If `readlink -f` is unavailable (macOS), use: `PLUGIN_DIR="$(cd "$(dirname bin/spawn-session.sh)/.." && pwd)"`.
 
-Store `$PERM_FILE` — you'll pass it to the spawn script via `--settings` when launching sessions.
+Store `$PERM_FILE` -- you'll pass it to the spawn script via `--settings` when launching sessions.
 
 If the manifest has `skip-permissions: true`, skip this step — the spawn script handles it with `--dangerously-skip-permissions`.
 
@@ -92,11 +91,9 @@ Progress directory: /tmp/autoboard-{slug}-progress/
 
 ## Knowledge from Prior Sessions
 
-{Paste the curated knowledge from docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md.
-This has been synthesized by the orchestrator — deduplicated, filtered for relevance,
-and annotated with cross-session context.
-
-If Layer 0 (no prior knowledge): "First layer — no prior knowledge."}
+Knowledge file: {absolute path to docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md}
+Read this file for curated cross-session knowledge (conventions, shared utilities, gotchas).
+If Layer 0 or file doesn't exist: no prior knowledge.
 
 ## Configuration
 
@@ -140,7 +137,7 @@ Do NOT redo completed tasks. Continue from the first incomplete task.
 Spawn all sessions in the layer as **parallel background Bash commands** in a single message:
 
 ```bash
-bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
+"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
   --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \
@@ -154,7 +151,7 @@ bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
 
 If the manifest has `skip-permissions: true`, use `--skip-permissions` instead of `--settings`:
 ```bash
-bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
+"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
   --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \

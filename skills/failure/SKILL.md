@@ -121,7 +121,7 @@ All other failures. Proceed to Step 3 for diagnosis and retry.
 **Retry mechanics:** Reuse the existing worktree (it has partial work). Write a new brief to `/tmp/autoboard-{slug}-s{N}-brief.md` with your diagnosis and adjusted instructions prepended. Spawn via the same shell wrapper:
 
 ```bash
-bin/spawn-session.sh /tmp/autoboard-{slug}-s{N}-brief.md \
+"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model} --cwd /tmp/autoboard-{slug}-s{N} \
   --settings "$PERM_FILE" \
   > /tmp/autoboard-{slug}-s{N}-output-retry{M}.jsonl 2>&1
