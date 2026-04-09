@@ -135,7 +135,7 @@ No implementation before understanding.
 **Update progress file:** Write `Phase: Planning` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Planning" and post a phase comment.
 
-Write your implementation plan and save it to `plan.md` in your worktree root. This file is read by the plan-reviewer and code-reviewer subagents.
+Write your implementation plan and save it to `/tmp/autoboard-{slug}-s{N}-plan.md` (derive `{slug}` and `s{N}` from your session brief's Session and Feature branch fields). This file is read by the plan-reviewer and code-reviewer subagents. Do NOT write it inside the worktree -- it must stay outside the repo to avoid accidental commits.
 
 **Do NOT use EnterPlanMode or ExitPlanMode** -- these tools require interactive confirmation and do not work in headless mode.
 
@@ -152,7 +152,7 @@ The plan must include:
 
 **MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this — the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below — do not stop here.
 
-Dispatch the `autoboard:plan-reviewer` agent via the Agent tool with the `plan-review-model` from your session brief's Configuration section (default: sonnet). Tell it to read the plan from `plan.md` in the working directory and the task records from the manifest at `docs/autoboard/{slug}/manifest.md`. Pass the task IDs for your session's tasks and the standards file path. Do NOT paste the plan or task context into the Agent prompt -- the plan-reviewer has Read tool access.
+Dispatch the `autoboard:plan-reviewer` agent via the Agent tool with the `plan-review-model` from your session brief's Configuration section (default: sonnet). Tell it the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`), the manifest path (`docs/autoboard/{slug}/manifest.md`), your task IDs, and the standards file path. Include in your prompt: "You MUST read the plan file and manifest with the Read tool before beginning your review." Do NOT paste the plan or task context into the Agent prompt.
 
 Max 3 review rounds. Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree.
 
@@ -160,7 +160,7 @@ Max 3 review rounds. Push back on incorrect suggestions with specific proven-har
 
 **If 3 rounds complete with unresolved BLOCKING issues:** Write the Escalation Template (above) with Phase set to "Plan Review" and exit.
 
-After review approval, update `plan.md` with any accepted changes. The file is already at the correct location from Phase 2.
+After review approval, update the plan file with any accepted changes. The file is already at the correct location from Phase 2.
 
 ## Phase 4: Implement
 
@@ -216,7 +216,7 @@ Invoke `/autoboard:verification-light` via the Skill tool to load the verificati
 
 **MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this — the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below — do not stop here.
 
-Dispatch the `autoboard:code-reviewer` agent via the Agent tool with the `code-review-model` from your session brief's Configuration section (default: sonnet). Tell it the feature branch name so it can run `git diff` itself, and tell it to read the approved plan from `plan.md` in the working directory. Pass the standards file path. Do NOT paste the diff or plan into the Agent prompt -- the code-reviewer has Bash and Read tool access.
+Dispatch the `autoboard:code-reviewer` agent via the Agent tool with the `code-review-model` from your session brief's Configuration section (default: sonnet). Tell it the feature branch name so it can run `git diff` itself, and tell it the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`). Pass the standards file path. Include in your prompt: "You MUST read the plan file with the Read tool before beginning your review." Do NOT paste the diff or plan into the Agent prompt.
 
 Max 3 review rounds. Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree. After implementing fixes, re-run verification (Phase 5) before resubmitting to the reviewer.
 

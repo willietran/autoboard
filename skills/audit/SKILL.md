@@ -75,7 +75,8 @@ You are a specialist — focus ONLY on your dimension. Be thorough, be specific,
 
 ## Your Checklist
 
-Read the quality standards checklist from: {absolute path to plugin dir}/standards/dimensions/{name}.md
+FIRST ACTION: Read the quality standards checklist from: {absolute path to plugin dir}/standards/dimensions/{name}.md
+You MUST read this file before auditing. Do not proceed without it.
 
 ## Project Context
 
@@ -170,7 +171,8 @@ that arise from these sessions working in parallel — problems no individual se
 
 ## Your Checklist
 
-Read the quality standards checklist from: {absolute path to plugin dir}/standards/dimensions/{name}.md
+FIRST ACTION: Read the quality standards checklist from: {absolute path to plugin dir}/standards/dimensions/{name}.md
+You MUST read this file before auditing. Do not proceed without it.
 
 {IF dimension is test-quality AND manifest has Key test scenarios:
 ## Project Test Scenarios

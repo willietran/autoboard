@@ -117,7 +117,7 @@ You are the only fixer for this round. Fix all items listed below.
 ## QA Findings
 
 QA report: {absolute path to docs/autoboard/{slug}/sessions/qa-L{N}.md}
-Read this file for the full QA-REPORT.
+You MUST read this file with the Read tool for the full QA-REPORT before starting any fixes.
 
 {For rounds > 0, also include:}
 ## Prior Round Summary
@@ -132,11 +132,9 @@ Expected skips (user-acknowledged -- do NOT try to fix these):
 
 ## Reference Files
 
-Design doc: {absolute path to design doc} (read ## Critical User Flows section for test context)
-Manifest: {absolute path to manifest.md} (read Key test scenarios from browser-marked tasks for test context)
-
-These inform your fix -- if QA failures involve user flows or browser interactions,
-read these files to understand what the expected behavior should be.
+Read these files with the Read tool before planning your fix:
+- Design doc: {absolute path to design doc} -- read the ## Critical User Flows section
+- Manifest: {absolute path to manifest.md} -- read Key test scenarios from browser-marked tasks
 
 Your job: fix the criteria that FAILED in your assignment. Do NOT attempt to
 fix EXPECTED SKIP criteria -- the user acknowledged those won't work yet.
@@ -167,7 +165,8 @@ disabling checks. The fix must be elegant, clean, and durable -- it
 should be indistinguishable from code written correctly the first time.
 If the root cause requires a significant refactor, do the refactor.
 
-Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md} (read with Read tool, or "No prior knowledge" if file doesn't exist)
+Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md}
+Read this file with the Read tool before planning your fix. Skip if file doesn't exist -- no prior knowledge.
 
 ## Configuration
 

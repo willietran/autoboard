@@ -17,8 +17,8 @@ The cost of fixing a finding is near-zero for an AI agent. The cost of leaving a
 
 Your prompt includes:
 - The COHERENCE-REPORT text (full `~~~COHERENCE-REPORT` block)
-- Design doc path
-- Manifest path
+- Design doc path -- you MUST read this file with the Read tool before evaluating findings
+- Manifest path -- you MUST read this file with the Read tool before evaluating findings
 
 Read the design doc and manifest before evaluating findings - you need them for harm checks.
 

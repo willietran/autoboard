@@ -75,9 +75,9 @@ Agent(
   Read this file for the COHERENCE-REPORT. Any BLOCKING items should already be fixed by the coherence fixer.
   If you encounter issues matching unresolved BLOCKING items, escalate as FAIL.
 
-  Critical user flows and test scenarios:
-  Read the ## Critical User Flows section from the design doc at: {absolute path to design.md}
-  Read Key test scenarios from browser-marked tasks in the manifest at: {absolute path to manifest.md}
+  Critical user flows and test scenarios -- you MUST read these files with the Read tool before testing:
+  - Design doc: {absolute path to design.md} -- read the ## Critical User Flows section
+  - Manifest: {absolute path to manifest.md} -- read Key test scenarios from browser-marked tasks
   These tell you WHAT to test -- not just happy paths but error paths and edge cases.
 
   The verification skill will run build/test commands and, if qa-mode is full,

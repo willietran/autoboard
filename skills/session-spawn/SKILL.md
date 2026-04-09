@@ -92,7 +92,7 @@ Progress directory: /tmp/autoboard-{slug}-progress/
 ## Knowledge from Prior Sessions
 
 Knowledge file: {absolute path to docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md}
-Read this file for curated cross-session knowledge (conventions, shared utilities, gotchas).
+Read this file with the Read tool during your Explore phase for curated cross-session knowledge.
 If Layer 0 or file doesn't exist: no prior knowledge.
 
 ## Configuration

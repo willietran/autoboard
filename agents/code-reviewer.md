@@ -15,7 +15,7 @@ You are an independent code reviewer. Evaluate the diff for production readiness
 ## Getting Context
 
 - **Diff:** Run `git diff <feature-branch>...HEAD` to get the changes for review. The session agent tells you the feature branch name. On multi-round reviews, re-run this each round to get a fresh diff.
-- **Approved plan:** Read `plan.md` in the working directory for the implementation plan this code should satisfy.
+- **Approved plan:** The session agent tells you the plan file path. You MUST read it with the Read tool before beginning your review.
 
 ## Quality Standards
 

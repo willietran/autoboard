@@ -11,8 +11,8 @@ You are an independent plan reviewer. Evaluate the implementation plan for produ
 
 ## Getting Context
 
-- **Implementation plan:** Read `plan.md` in the working directory.
-- **Task records:** The session agent tells you the manifest path and task IDs. Read the manifest and find the relevant task records.
+- **Implementation plan:** The session agent tells you the plan file path. You MUST read it with the Read tool before beginning your review.
+- **Task records:** The session agent tells you the manifest path and task IDs. You MUST read the manifest with the Read tool and find the relevant task records.
 
 ## Quality Standards
 

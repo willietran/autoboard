@@ -97,7 +97,7 @@ You are the only fixer for this round. Fix all items listed below.
 ## Coherence Findings
 
 Coherence report: {absolute path to docs/autoboard/{slug}/sessions/coherence-L{N}.md}
-Read this file for the full COHERENCE-REPORT.
+You MUST read this file with the Read tool for the full COHERENCE-REPORT before starting any fixes.
 
 {For rounds > 0, also include:}
 ## Prior Round Summary
@@ -109,9 +109,10 @@ prior fixer's merge conflicted. Changes merged by other fixers since then:
 
 ## Reference Files
 
-Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md} (read with Read tool, or "No prior knowledge" if file doesn't exist)
-Design doc: {absolute path to design doc} (read ## Critical User Flows section for test context)
-Manifest: {absolute path to manifest.md} (read Key test scenarios from task records for test context)
+Read these files with the Read tool before planning your fix:
+- Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md} (skip if file doesn't exist -- no prior knowledge)
+- Design doc: {absolute path to design doc} -- read the ## Critical User Flows section
+- Manifest: {absolute path to manifest.md} -- read Key test scenarios from task records
 
 These inform test quality remediation -- if the BLOCKING findings include test quality issues,
 the fix should ensure tests cover these scenarios.
