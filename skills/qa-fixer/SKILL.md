@@ -1,25 +1,15 @@
 ---
 name: qa-fixer
-description: Dispatch fixer session agents for QA gate failures. Triages failures, groups into parallel fixers, manages round-based retry loop. Re-invoke at the start of each new layer.
+description: Dispatch fixer teammates for QA gate failures. Triages failures, groups into parallel fixers, manages round-based retry loop with build-first and post-merge circuit breaker. Re-invoke at the start of each new layer.
 ---
 
 # QA Fixer
 
-Dispatch full session agents to fix genuine code failures identified by the QA gate. Each fixer loads `/autoboard:session-workflow` and follows the complete Explore -> Plan -> Review -> Implement -> Verify -> Code Review -> Commit lifecycle.
+Dispatch fixer teammates to fix genuine code failures identified by the QA gate. Each fixer teammate must invoke `/autoboard:diagnose` before attempting any fixes.
 
 **Prerequisites:** A QA-REPORT with genuine code failures (not infrastructure failures, not premature criteria). The qa-gate skill has already validated the failures and routed them here.
 
-**Ownership model:** This skill owns the entire retry loop. The orchestrator invokes it once. It manages triage, grouping, parallel dispatch, merging, gate re-runs, and retry logic internally. It returns only when the gate passes or the round limit is exhausted.
-
----
-
-## Tracking: Post Dispatch Comment
-
-Read `docs/autoboard/{slug}/github-tracking.md` to get the QA gate issue number and item ID for this layer.
-
-If tracking is active:
-- `post-comment(qa-gate, "Dispatching fixer agent(s) for QA failures.")`
-- `move-ticket(qa-gate, Implementing)`
+**Ownership model:** This skill owns the entire retry loop. The lead invokes it once. It manages triage, grouping, parallel dispatch, merging, gate re-runs, and retry logic internally. It returns only when the gate passes or the round limit is exhausted.
 
 ---
 
@@ -33,9 +23,11 @@ Parse the QA-REPORT and categorize each failed item:
 
 ### Build-First Rule
 
-If ANY build steps failed, dispatch a **single build fixer** as Round 0. Build failures are foundational -- many browser failures are downstream symptoms. Fix the build first, re-run the gate, then assess remaining browser failures.
+If ANY build steps failed, dispatch a **single build fixer** as Round 0. Build failures are foundational - many browser failures are downstream symptoms. Fix the build first, re-run the gate, then assess remaining browser failures.
 
-If Round 0 fails (build still broken after fixer completes), retry twice more (3 total Round 0 attempts). Round 0 attempts do not count against the 5-round cap. After 3 failed Round 0 attempts, proceed to Round 1 (which starts the 5-round counter) with both build and browser failures grouped together.
+Round 0 runs up to 3 attempts. Each attempt dispatches a single fixer teammate for build failures only. Round 0 attempts do not count against the 5-round cap.
+
+If all 3 Round 0 attempts fail (build still broken), proceed to Round 1 (which starts the 5-round counter) with both build and browser failures grouped together.
 
 If no build failures, skip to Step 2.
 
@@ -49,7 +41,7 @@ After Round 0 (or if no build failures), count remaining failed items:
 - **Total > 5:** Group into batches:
   - Acceptance criteria failures: groups of max 5
   - Regression failures: groups of max 5 (separate from acceptance)
-  - Respect `max-parallel` concurrency limit from the manifest
+  - Respect `max-batch-size` concurrency limit from the manifest
 
 For single-fixer dispatch, use group `g1`.
 
@@ -67,52 +59,49 @@ ROUND_CHECKPOINT=$(git rev-parse HEAD)
 
 ### 3b. Create Worktrees
 
-Create worktrees **sequentially** (avoids git lock contention). All branch from feature branch HEAD at this point:
+The lead creates worktrees **sequentially** (avoids git lock contention). All branch from feature branch HEAD at this point:
 
 ```bash
 git worktree add /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group} -b autoboard/{slug}-qa-fix-L{N}-r{round}-g{group} autoboard/{slug}
 for f in .env*; do [ -f "$f" ] && ln -sf "$(pwd)/$f" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}/"$f"; done
+[ -d .codesight ] && ln -sf "$(pwd)/.codesight" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}/.codesight
 ```
 
-### 3c. Write Briefs
+### 3c. Dispatch Fixer Teammates
 
-Write each fixer's brief to `/tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md`. The brief uses the **same template as today** -- all existing sections preserved. Two sections are added: "Your Assignment" (after Session Brief) and "Prior Round Summary" (for rounds > 0).
+Spawn fixer teammates via the Agent tool. Each fixer receives a prompt with its assignment, the QA-REPORT path, and mandatory debugging instructions.
+
+Select the teammate model based on failure complexity:
+- Build failures or straightforward test failures: sonnet
+- Complex browser/integration failures or failures that persisted across rounds: opus
+
+Each fixer teammate prompt:
 
 ```
-You are a autoboard session agent.
+You are an autoboard fixer teammate.
 
-Your FIRST action must be to invoke /autoboard:session-workflow via the Skill tool.
-This loads your full workflow and shell safety guidelines.
-Do NOT write any code or make any changes before invoking this skill.
+## Assignment
 
-## Session Brief
+{For Round 0 (build-first):}
+Fix build failures from QA gate Layer {N}. Focus exclusively on making the build pass.
 
-Session: QA Fix -- Layer {N}, Round {round}, Group {group}
-Feature branch: autoboard/{slug}
-Session branch: autoboard/{slug}-qa-fix-L{N}-r{round}-g{group}
-Project directory: docs/autoboard/{slug}/
-Worktree path: /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}
-Progress directory: /tmp/autoboard-{slug}-progress/
-
-[QA FIX] QA gate failed after Layer {N}.
-
-## Your Assignment
-
-You are fixer {G} of {N} parallel fixers for round {round}.
+{For Round 1+:}
+You are fixer {G} of {total} parallel fixers for round {round}.
 Fix ONLY these items:
 
 {list of assigned items with their criterion number, text, and evidence from the QA-REPORT}
 
-Read the full QA-REPORT from the file path in the QA Findings section below. Other fixers are handling:
+{For single-fixer rounds (only 1 group):}
+You are the only fixer for this round. Fix all items listed below.
+
+{For multi-fixer rounds, also include:}
+Other fixers are handling:
 {for each other fixer: "- Fixer {K}: {brief summary of their assigned items}"}
 
 Understanding what others are fixing helps you avoid conflicting changes.
-If your fix would also resolve items assigned to another fixer, that is fine --
+If your fix would also resolve items assigned to another fixer, that is fine -
 the gate re-run will detect it. Do NOT modify files solely for another
 fixer's items if you can avoid it.
-
-{For single-fixer rounds (only 1 group), simplify to:}
-You are the only fixer for this round. Fix all items listed below.
 
 ## QA Findings
 
@@ -125,35 +114,31 @@ You MUST read this file with the Read tool for the full QA-REPORT before startin
 Round {R-1} resolved: {items}. Still failing: {items}.
 {If carry-over from merge conflict:} Your items were carried over because the
 prior fixer's merge conflicted. Changes merged by other fixers since then:
-{diff summary from git diff ROUND_CHECKPOINT..HEAD}
+{diff summary from git diff $ROUND_CHECKPOINT..HEAD}
 
-Expected skips (user-acknowledged -- do NOT try to fix these):
+Expected skips (user-acknowledged - do NOT try to fix these):
 {paste the expected-skips section from the manifest, or 'none'}
 
 ## Reference Files
 
 Read these files with the Read tool before planning your fix:
-- Design doc: {absolute path to design doc} -- read the ## Critical User Flows section
-- Manifest: {absolute path to manifest.md} -- read Key test scenarios from browser-marked tasks
-
-Your job: fix the criteria that FAILED in your assignment. Do NOT attempt to
-fix EXPECTED SKIP criteria -- the user acknowledged those won't work yet.
-
-Do NOT rewrite working code. Only fix what your assignment identifies.
+- Design doc: {absolute path to design doc} - read the ## Critical User Flows section
+- Manifest: {absolute path to manifest.md} - read Key test scenarios from tasks
+- Standards: {absolute path to docs/autoboard/{slug}/standards.md}
 
 ## Mandatory Debugging Protocol (NON-NEGOTIABLE)
 
 Before attempting ANY fix, you MUST:
-1. Reproduce the exact failing criterion -- if QA failed in browser, reproduce in browser.
-   Use the dev server and browser tool from your Configuration section.
-2. Invoke /autoboard:diagnose via the Skill tool to trace root cause.
+1. Invoke /autoboard:diagnose via the Skill tool to reproduce the failure and trace root cause.
    This loads a structured four-phase methodology: Reproduce -> Trace -> Hypothesize -> Fix.
-   Follow it completely -- no shortcuts.
+   Follow it completely - no shortcuts.
+2. If the failure was in browser, reproduce in browser. Use the dev server and browser tool
+   from your Configuration section.
 3. Only after root cause is identified, plan and implement the fix.
-4. After implementing, re-verify against the SAME criterion that failed (same mode --
+4. After implementing, re-verify against the SAME criterion that failed (same mode -
    if it was a browser failure, test in browser). Light-mode verification (build+tests)
-   is necessary but NOT sufficient -- you must also confirm the specific criterion passes.
-5. Only commit if the criterion now passes.
+   is necessary but NOT sufficient - you must also confirm the specific criterion passes.
+5. Only mark your task complete if the criterion now passes.
 
 Do NOT skip reproduction. Do NOT skip systematic debugging. Do NOT verify only with
 build+tests when the failure was in browser. The fix is not done until the original
@@ -161,102 +146,61 @@ failing criterion passes in the same mode it originally failed.
 
 Your fix must solve the ROOT CAUSE, not paper over symptoms.
 No hacky workarounds, no `as any` casts, no skipping tests, no
-disabling checks. The fix must be elegant, clean, and durable -- it
+disabling checks. The fix must be elegant, clean, and durable - it
 should be indistinguishable from code written correctly the first time.
 If the root cause requires a significant refactor, do the refactor.
 
+Do NOT rewrite working code. Only fix what your assignment identifies.
+
 ## Configuration
 
-- Verify command: {verify from frontmatter}
-- Dev server: {dev-server from frontmatter}
-- QA mode: {qa-mode from frontmatter}
-- Explore model: {explore-model from frontmatter, default: haiku}
-- Plan review model: {plan-review-model from frontmatter, default: sonnet}
-- Code review model: {code-review-model from frontmatter, default: sonnet}
-
-## Available Skills and Agents
-
-The session workflow will tell you when to use each of these:
-- /autoboard:diagnose -- mandatory before attempting fixes (root cause investigation)
-- /autoboard:verification-light -- verification protocol
-- /autoboard:receiving-review -- critical thinking protocol for processing review feedback
-- autoboard:plan-reviewer agent -- plan review (model: plan-review-model above)
-- autoboard:code-reviewer agent -- code review (model: code-review-model above)
+- Verify command: {verify from config}
+- Dev server: {dev-server from config}
+- QA Mode: {qa-mode from config}
+- Worktree: /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}
+- Feature branch: autoboard/{slug}
 ```
 
-#### Tracking Section
+Spawn at most `max-batch-size` fixers concurrently. If more groups exist than `max-batch-size`, spawn the next when one completes.
 
-If tracking is active, append the `## Tracking` section using the **QA gate issue number and item ID** (not a separate fixer issue -- the fixer posts progress to the QA gate issue). Use the `session-brief-section` action from the loaded tracking provider -- same format as session briefs but with the QA gate's IDs.
+### 3d. Wait for Completion
 
-The fixer is a full session agent and will move through Exploring -> Planning -> Implementing -> Verifying -> Code Review phases on the tracking board.
+Teammates notify automatically when they complete their tasks. Do NOT poll or sleep.
 
-If tracking is disabled, omit the Tracking section entirely.
-
-### 3d. Spawn Fixers
-
-Spawn all fixers in this round as **parallel background Bash commands**:
-
-```bash
-"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md \
-  --model {model from frontmatter} \
-  --effort {effort of the session that produced the failing code} \
-  --cwd /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group} \
-  --settings "$PERM_FILE" \
-  --standards "docs/autoboard/{slug}/standards.md" \
-  --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
-  --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
-  --codesight ".codesight/wiki/index.md" \
-  > /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-output.jsonl 2>&1
-```
-
-If `skip-permissions: true` in manifest, use `--skip-permissions` instead of `--settings`.
-
-Run each with Bash `run_in_background: true`. Spawn at most `max-parallel` fixers concurrently. If more groups exist than `max-parallel`, use the same sliding window as session-spawn (spawn next when one completes).
-
-### 3e. Wait for Completion
-
-Background Bash commands notify automatically when they complete. Do NOT poll or sleep.
-
-### 3f. Merge Fixers
+### 3e. Merge Fixers
 
 **Pause future layers** until all fixers complete and the re-run QA gate passes.
 
 After all fixers in the round complete:
 
-1. **Read session status files** from `docs/autoboard/{slug}/sessions/` in each fixer worktree
-2. **Merge each fixer** to the feature branch sequentially (squash merge -- see merge skill). Commit message: `QA Fix L{N} r{round} g{group}: {brief description}`
-3. **If a fixer merge conflicts** with a prior fixer's merge in the same round: abort the merge, skip this fixer, carry over its items to the next round with diff context
-4. **Tracking (if active):** `post-comment(qa-gate, "Round {round} complete. {M} of {N} fixers merged. {summary}")`
+1. **Merge each fixer** to the feature branch sequentially (squash merge). Commit message: `QA Fix L{N} r{round} g{group}: {brief description}`
+2. **If a fixer merge conflicts** with a prior fixer's merge in the same round: abort the merge, skip this fixer, carry over its items to the next round with diff context
 
-### 3g. Post-Merge Verification (Circuit Breaker)
+### 3f. Post-Merge Verification (Circuit Breaker)
 
 After all merges in the round, run the verify command:
 
 ```bash
-{verify command from frontmatter}
+{verify command from config}
 ```
 
-If verification **passes**: proceed to gate re-run (Step 3h).
+If verification **passes**: proceed to gate re-run (Step 3g).
 
 If verification **fails** (merge produced broken code):
 - Roll back to `ROUND_CHECKPOINT`: `git reset --hard $ROUND_CHECKPOINT`
-- Next round dispatches a **single fixer** for all remaining items (circuit breaker -- parallel merges caused conflicts, fall back to serial)
+- Next round dispatches a **single fixer** for all remaining items (circuit breaker - parallel merges caused conflicts, fall back to serial)
 - Log: "Circuit breaker: post-merge verify failed. Falling back to single fixer for round {round+1}."
 
-### 3h. Re-run QA Gate
+### 3g. Re-run QA Gate
 
-Re-run the QA gate with the same acceptance criteria -- invoke the qa-gate skill again.
+Re-run the QA gate with the same acceptance criteria - invoke the qa-gate skill again.
 
-- **All criteria pass:** QA gate is clean. Done. Proceed to 3i.
+- **All criteria pass:** QA gate is clean. Done. Proceed to 3h.
 - **Criteria still fail:** Proceed to Step 4 (Retry Logic).
 
-### 3i. On Pass
+### 3h. On Pass
 
-**Tracking (if active):**
-- `close-ticket(qa-gate)`
-- `move-ticket(qa-gate, Done)`
-
-Clean up all fixer worktrees and branches from this gate. Return to the orchestrator.
+Clean up all fixer worktrees and branches from this gate. Return to the lead.
 
 ---
 
@@ -265,7 +209,7 @@ Clean up all fixer worktrees and branches from this gate. Return to the orchestr
 ### Progress Detection
 
 Compare the set of failed criterion names between consecutive QA-REPORTs:
-- **Progress** (failures changed -- previous issues fixed, even if new ones surfaced): Reset the consecutive-failure counter to 0. Log: "Round {R}: resolved {criteria}. New failures: {criteria}. Dispatching next round."
+- **Progress** (failures changed - previous issues fixed, even if new ones surfaced): Reset the consecutive-failure counter to 0. Log: "Round {R}: resolved {criteria}. New failures: {criteria}. Dispatching next round."
 - **No progress** (same criteria still failing with same evidence): Increment the consecutive-failure counter. Log: "Round {R}: no progress on {criteria}. {remaining} rounds left."
 
 ### Limits
@@ -274,29 +218,23 @@ Compare the set of failed criterion names between consecutive QA-REPORTs:
 - **Max 3 consecutive non-progress rounds.** If 3 rounds in a row fail to resolve any items, escalate early.
 - **Never ask the user** during the loop. Dispatch fixers automatically until the gate passes or limits are reached.
 
-Each fixer must invoke `/autoboard:diagnose` and trace root cause before implementing -- no blind retries.
+Each fixer must invoke `/autoboard:diagnose` and trace root cause before implementing - no blind retries.
 
 ### Carry-Over Items
 
-When items carry over to the next round (from failures or merge conflicts), the next round's brief includes:
+When items carry over to the next round (from failures or merge conflicts), the next round's prompt includes:
 - The updated QA-REPORT from the latest gate re-run
 - A "## Prior Round Summary" showing what was resolved and what remains
 - For merge-conflict carry-overs: the diff of what other fixers merged (`git diff $ROUND_CHECKPOINT..HEAD`)
 
-Re-triage and re-group the remaining items for the next round (Step 2). The grouping may change -- fewer items may mean a single fixer suffices.
+Re-triage and re-group the remaining items for the next round (Step 2). The grouping may change - fewer items may mean a single fixer suffices.
 
 ### On Limit Reached
 
-**Tracking (if active):**
-```
-post-comment(qa-gate, "QA fixer limit reached after {M} rounds. Escalating to user.")
-move-ticket(qa-gate, Failed)
-```
-
-Escalate to the user -- report all QA reports and what was attempted:
+Escalate to the user - report all QA reports and what was attempted:
 
 ```
-QA gate failed -- fixer limit reached ({M} rounds exhausted).
+QA gate failed - fixer limit reached ({M} rounds exhausted).
 The gate must pass before proceeding.
 
 Round summary:
