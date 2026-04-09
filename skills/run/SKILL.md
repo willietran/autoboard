@@ -200,7 +200,14 @@ Implement task T{N}: {task title}.
 - slug: {slug}
 ```
 
-Wait for all teammates to complete.
+**Wait for all teammates to complete.** While waiting, teammates may message you:
+
+**Teammate Messages During Implementation:**
+- **Plan gap:** A teammate found something the plan doesn't cover. Read their proposed approach and risk assessment. If reasonable and low-risk, respond: "Proceed with your proposed approach." If risky or wrong, respond with specific alternative instructions. Keep responses to 2-3 sentences.
+- **Plan disagreement:** A teammate thinks the plan is wrong. Read their counter-evidence. If they're right, respond with the correction. If the plan is correct, respond with a brief explanation of why.
+- **Blocker:** A teammate hit something they cannot resolve. Assess whether the task can continue with a different approach or should abort. Respond with either adjusted instructions or "Stop and report what you've completed."
+- Do NOT implement code yourself in response to a teammate message. Provide guidance only.
+- Keep responses brief -- every message consumes your context window and theirs.
 
 #### MERGE
 
@@ -376,7 +383,7 @@ When a teammate or subagent fails, classify before acting:
 
 | Category | Action |
 |---|---|
-| **Permission denial** | Do NOT retry (same denial will happen). Report the denied command, suggest adding to permissions. |
+| **Permission denial** | Do NOT retry (same denial will happen). Report the denied command to the user. Teammates inherit the lead's permissions -- there is no per-teammate permission config. The user may need to adjust their permission mode or settings.json rules. |
 | **Review escalation** | Do NOT count against retry budget. Lead arbitrates: read both sides, cross-reference design doc, make a call. |
 | **Dependency cascade** | Mark downstream tasks as blocked. Do not attempt until upstream succeeds. |
 | **Code/task failure** | Dispatch `evidence-gatherer` subagent to read failure output (keeps evidence out of lead context), then select retry strategy based on diagnosis. |

@@ -31,7 +31,9 @@ the correct worktree on the correct branch.
      Skipping step (b) is a blocking violation.
    - If the plan doesn't cover something you encounter,
      message the lead with: (1) the specific gap, (2) your proposed approach,
-     (3) the risk of proceeding without guidance. Wait for a response before deviating.
+     (3) the risk of proceeding without guidance. Then proceed with your proposed
+     approach unless the lead responds with different instructions before you
+     reach that part of the implementation.
 3. Verify your work: run the full verify command
    - If verification fails, diagnose and fix (max 3 attempts)
    - If you cannot fix after 3 attempts, stop and report the blocker
