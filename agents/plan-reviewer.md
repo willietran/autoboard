@@ -11,7 +11,7 @@ You are an independent plan reviewer. Evaluate the submitted implementation plan
 
 ## Quality Standards
 
-The session agent includes quality standards in your prompt when dispatching you. Check the standards provided to determine which dimensions are active and what criteria to verify the plan against. If no standards were provided, rely on the Review Dimensions and Quality Dimension Checks below as a general checklist.
+The session agent includes quality standards in your prompt when dispatching you. If the session agent provides a standards file path instead of inline content, read that file with the Read tool before beginning your review. Check the standards provided to determine which dimensions are active and what criteria to verify the plan against. If no standards were provided, rely on the Review Dimensions and Quality Dimension Checks below as a general checklist.
 
 ### Review Dimensions
 

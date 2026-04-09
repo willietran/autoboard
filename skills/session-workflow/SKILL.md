@@ -32,7 +32,7 @@ Update this file after: entering each phase, completing each task, encountering 
 
 ## Tracking
 
-If your session brief includes a `## Tracking` section, read the `Provider` field and invoke `/autoboard:tracking-{provider}` via the Skill tool (e.g., `/autoboard:tracking-github`). Follow the "For Session Agents" section of the loaded provider skill. If your brief does NOT have a Tracking section, skip this.
+If your session brief includes a `## Tracking` section, read the `Provider` field and invoke `/autoboard:tracking-{provider}-session` via the Skill tool (e.g., `/autoboard:tracking-github-session`). Follow the loaded provider skill. If your brief does NOT have a Tracking section, skip this.
 
 ## Your Tasks
 
@@ -58,6 +58,53 @@ If your session brief indicates this is a retry (prior attempt failed):
 2. Identify which tasks are already completed (passing tests, committed)
 3. Continue from the first incomplete task
 4. Do NOT redo completed work
+
+---
+
+## Iron Rule
+
+Never skip a phase. Never start implementation before exploration. Never skip review.
+Run every command; do not assume results. If a thought starts with "I already know..."
+or "This is simple enough to skip..." - that thought is wrong.
+
+## File Read Discipline
+
+Large files consume context permanently. Every read adds its full content to your window.
+
+1. Never re-read a file you already read in this session. Reference your memory of the previous read. If you need a specific section, use offset and limit parameters.
+2. For files >200 lines: read only the relevant section using offset and limit. Do not read the entire file.
+3. Before reading a file, ask: "Have I already read this?" If yes, do not read it again.
+4. When passing context to reviewers: include relevant excerpts in your prompt rather than instructing reviewers to re-read the same files. Exception: for standards files, pass the file path instead of pasting content (see Quality Standards section).
+5. Exception: re-read a file after you modified it, to verify your changes.
+
+## Escalation Template
+
+When a review gate exhausts 3 rounds with unresolved BLOCKING issues, write your session status file using this template:
+
+```markdown
+# Session S{N}: {focus}
+
+**Status:** escalation
+**Phase:** {Plan Review | Code Review}
+**Review rounds completed:** 3
+**Tasks completed:** {none | list of committed tasks}
+
+## Escalation
+
+### Reviewer's Position
+{Paste the BLOCKING issues the reviewer flagged in the final round, verbatim}
+
+### Session's Position
+{Your technical counterarguments - why you believe the reviewer is wrong or the issue is not blocking}
+
+### Recommended Resolution
+{What you think the right call is, with reasoning}
+
+## Knowledge
+{Any knowledge discovered during exploration, even if implementation didn't complete}
+```
+
+Then exit. The orchestrator will read both sides and arbitrate.
 
 ---
 
@@ -98,12 +145,6 @@ The plan must include:
 - Dependency order between tasks
 - Risk areas and mitigation
 
-| Thought that means STOP | Reality |
-|---|---|
-| "This is simple, I don't need a plan" | Simple tasks have the most unexamined assumptions. Plan anyway. |
-| "I'll figure it out as I go" | Improvisation compounds errors. Write the plan. |
-| "The manifest IS the plan" | The manifest describes WHAT. The plan describes HOW, with exact files and verification steps. |
-
 ## Phase 3: Plan Review (BLOCKING GATE)
 
 **Update progress file:** Write `Phase: Plan Review` to your progress file.
@@ -117,41 +158,7 @@ Max 3 review rounds. Push back on incorrect suggestions with specific proven-har
 
 **Do NOT proceed to implementation with unresolved BLOCKING issues.**
 
-**If 3 rounds complete with unresolved BLOCKING issues:** Escalate to the orchestrator. Do NOT silently proceed with unresolved issues. Do NOT hang waiting for user input.
-
-Write your session status file with `Status: escalation` and an `## Escalation` section:
-
-```markdown
-# Session S{N}: {focus}
-
-**Status:** escalation
-**Phase:** Plan Review
-**Review rounds completed:** 3
-**Tasks completed:** none
-
-## Escalation
-
-### Reviewer's Position
-{Paste the BLOCKING issues the reviewer flagged in the final round, verbatim}
-
-### Session's Position
-{Your technical counterarguments — why you believe the reviewer is wrong or the issue is not blocking}
-
-### Recommended Resolution
-{What you think the right call is, with reasoning}
-
-## Knowledge
-{Any knowledge discovered during exploration, even if implementation didn't complete}
-```
-
-Then exit. The orchestrator will read both sides and arbitrate.
-
-| Thought that means STOP | Reality |
-|---|---|
-| "The plan looks good, I'll skip review" | Run the review subagent. Every time. No exceptions. |
-| "This is a simple change, no review needed" | Simple changes have the most unexamined assumptions. |
-| "I'll save time by starting implementation now" | Fixing a bad plan costs 10x more than reviewing it. |
-| "The reviewer will probably just approve it" | Then the review takes 30 seconds. Do it. |
+**If 3 rounds complete with unresolved BLOCKING issues:** Write the Escalation Template (above) with Phase set to "Plan Review" and exit.
 
 After review approval, write the approved plan to the artifacts path given in your prompt.
 
@@ -164,9 +171,16 @@ Execute tasks from the reviewed plan. Follow the Quality Standards (loaded at se
 
 ### TDD Tasks (RED -> GREEN -> REFACTOR)
 
-1. Write the failing test first. Run it. Watch it fail. **(RED)**
-2. Write the minimum implementation to make it pass. **(GREEN)**
-3. Refactor if needed, keeping tests green. **(REFACTOR)**
+For tasks marked TDD (non-Exempt), follow the strict cycle:
+
+1. **RED**: Write a failing test that describes the desired behavior.
+2. **Verify RED**: Run the test suite. Confirm the new test fails with the expected reason. Do NOT proceed if it passes - the test is wrong.
+3. **GREEN**: Write the minimum implementation to make the test pass.
+4. **Verify GREEN**: Run the test suite. Confirm all tests pass - new and existing.
+5. **REFACTOR**: Clean up implementation and tests. Improve naming, extract duplication, simplify.
+6. **Verify REFACTOR**: Run the test suite again. Confirm nothing broke.
+
+**Skipping RED verification or writing implementation before tests is a BLOCKING violation.**
 
 ### Non-TDD Tasks
 
@@ -193,25 +207,7 @@ Independent tasks MAY be executed via parallel subagents at your discretion. **C
 **Update progress file:** Write `Phase: Verifying` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Verifying" and post a phase comment.
 
-Invoke `/autoboard:verification` via the Skill tool to load the verification protocol. **After verification returns**, continue executing the steps below — do not stop here. Verification loading is not a turn boundary.
-
-Run the verification command from your session brief. Typically:
-
-1. Package install (e.g., `npm install`, `pip install`)
-2. Type checking (e.g., `npx tsc --noEmit`, `mypy`)
-3. Build (e.g., `npm run build`)
-4. Test (e.g., `npm test`, `pytest`)
-
-All steps must pass. If any fails, diagnose, fix, and re-run ALL commands. Max 3 attempts.
-
-| Thought that means STOP | Reality |
-|---|---|
-| "Tests should pass, I'll skip verification" | "Should" is not evidence. Run the commands. |
-| "I just ran tests during implementation" | Those were per-task. This is full-suite. Run them again. |
-| "Only my files changed, nothing else could break" | Integration effects are invisible until you test. Run all commands. |
-| "I'll verify after code review" | Code review assumes verified code. Verify first. |
-
-**After all verification steps pass**, proceed immediately to Phase 6. Do not stop after verification.
+Invoke `/autoboard:verification-light` via the Skill tool to load the verification protocol. Run the verify commands from your session brief. All must pass. **After all verification steps pass**, proceed immediately to Phase 6. Do not stop after verification.
 
 ## Phase 6: Code Review (BLOCKING GATE)
 
@@ -224,41 +220,7 @@ Dispatch the `autoboard:code-reviewer` agent via the Agent tool with the `code-r
 
 Max 3 review rounds. Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree. After implementing fixes, re-run verification (Phase 5) before resubmitting to the reviewer.
 
-**If 3 rounds complete with unresolved BLOCKING issues:** Escalate to the orchestrator. Do NOT silently proceed with unresolved issues. Do NOT hang waiting for user input.
-
-Write your session status file with `Status: escalation` and an `## Escalation` section:
-
-```markdown
-# Session S{N}: {focus}
-
-**Status:** escalation
-**Phase:** Code Review
-**Review rounds completed:** 3
-**Tasks completed:** {list of committed tasks}
-
-## Escalation
-
-### Reviewer's Position
-{Paste the BLOCKING issues the reviewer flagged in the final round, verbatim}
-
-### Session's Position
-{Your technical counterarguments — why you believe the reviewer is wrong or the issue is not blocking}
-
-### Recommended Resolution
-{What you think the right call is, with reasoning}
-
-## Knowledge
-{Key discoveries or patterns for future sessions}
-```
-
-Then exit. The orchestrator will read both sides and arbitrate.
-
-| Thought that means STOP | Reality |
-|---|---|
-| "All tests pass, time to commit" | Run the code review subagent first. Every time. |
-| "The code is clean, review is a formality" | You wrote it — you can't see your own blind spots. |
-| "I'll save time and skip this round" | Time saved here is bugs shipped later. |
-| "The reviewer will probably just approve it" | Then the review takes 30 seconds. Do it. |
+**If 3 rounds complete with unresolved BLOCKING issues:** Write the Escalation Template (above) with Phase set to "Code Review" and exit.
 
 ## Phase 7: Commit
 
@@ -301,66 +263,24 @@ Write a session status file to `docs/autoboard/<slug>/sessions/s{N}-status.md` (
 
 Every task must satisfy the project's active quality standards. Violations are blocking issues in code review.
 
-## Quality Standards
-
-Quality standards for your project are included in your session brief under the `## Quality Standards` section. Follow them throughout implementation — use the Criteria checklists as implementation guidance, and the Common Violations lists as a "don't do this" reference.
+Quality standards for your project are included in your session brief under the `## Quality Standards` section. Follow them throughout implementation - use the Criteria checklists as implementation guidance, and the Common Violations lists as a "don't do this" reference.
 
 If no Quality Standards section is present in your brief, no project-specific standards apply.
 
-**Passing standards to reviewers:** When you dispatch plan-reviewer or code-reviewer subagents, include the full Quality Standards content from your brief in the reviewer's prompt. Reviewers do NOT inherit your context — they only see what you pass them.
-
-## TDD Discipline
-
-For tasks marked TDD (non-Exempt), follow the strict RED -> GREEN -> REFACTOR cycle:
-
-1. **RED**: Write a failing test that describes the desired behavior.
-2. **Verify RED**: Run the test suite. Confirm the new test fails with the expected reason. Do NOT proceed if it passes — the test is wrong.
-3. **GREEN**: Write the minimum implementation to make the test pass.
-4. **Verify GREEN**: Run the test suite. Confirm all tests pass — new and existing.
-5. **REFACTOR**: Clean up implementation and tests. Improve naming, extract duplication, simplify.
-6. **Verify REFACTOR**: Run the test suite again. Confirm nothing broke.
-
-**Skipping RED verification or writing implementation before tests is a BLOCKING violation.**
+**Passing standards to reviewers:** Pass the **resolved absolute path** to the standards file in your reviewer prompt. Example: "Read the quality standards from: /path/to/docs/autoboard/my-project/standards.md". Do NOT paste the full standards content into the prompt - reviewers have Read tool access and can read the file themselves. Resolve the path from your session brief before passing it (do not use template variables like `{slug}`).
 
 ## Cleanup Culture
 
-- **Leave the codebase cleaner than you found it.** If you touch a file and notice mess — stale comments, unused variables, poor organization — fix it. Don't punt cleanup to a future task.
-- **Zero dead code in files you create or modify for your tasks**: No commented-out blocks, no unused functions, no orphaned imports, no stale TODOs. Do not clean up files unrelated to your tasks — another session may depend on code that looks unused from your perspective.
+- **Leave the codebase cleaner than you found it.** If you touch a file and notice mess - stale comments, unused variables, poor organization - fix it. Don't punt cleanup to a future task.
+- **Zero dead code in files you create or modify for your tasks**: No commented-out blocks, no unused functions, no orphaned imports, no stale TODOs. Do not clean up files unrelated to your tasks - another session may depend on code that looks unused from your perspective.
 - **Remove failed attempts**: During debugging, when you fix a bug, remove every failed attempt before committing. The commit should contain only the working solution.
 - **No debug artifacts**: Console.log statements, temporary test values, and debugging scaffolding must be removed before committing.
-
-## Verification
-
-All verification commands defined in your task's plan must pass before proceeding to code review. Run them, confirm they pass, and include the evidence. Never claim success without proof. Do not proceed to code review without passing verification.
 
 ---
 
 # Shell Safety
 
-These patterns cause agent failures and wasted retries. Avoid them.
-
-## Never use interactive CLI tools without suppression
-
-Many scaffolding tools (`create-next-app`, `create-vite`, etc.) prompt for input by default.
-Always pass non-interactive flags or pipe input:
-- Use `--yes` with `npx` to skip "Ok to proceed?" prompts (e.g., `npx --yes create-next-app@latest my-app --use-npm`)
-- Use `yes "" | <command>` as a last resort for tools with no non-interactive flag
-- Set `CI=1` or `NONINTERACTIVE=1` to suppress interactive behavior
-
-## Use `npm ci`, not `npm install`
-
-`npm install` modifies the lockfile and is non-deterministic. `npm ci` installs exactly
-what's in the lockfile. Always use `npm ci` for reproducible builds.
-
-## Don't run commands that block on stdin
-
-If a command hangs with no output, it's probably waiting for input. Kill it and find the
-non-interactive equivalent. Common culprits:
-- Test runners in watch mode (fix: `CI=1 npm test`)
-- Package managers asking for confirmation
-- Git operations that open an editor (fix: use `-m` flags)
-
-## Run verification commands in order
-
-Type-check -> build -> test. If type-check fails, don't run build. If build fails, don't run tests.
-Read error output carefully before retrying — don't re-run the same failing command.
+- Always use non-interactive flags: `--yes` with npx, `CI=1` for test runners, `-m` for git commits. Use `yes "" | <command>` as a last resort.
+- Use `npm ci` not `npm install` (deterministic, doesn't modify lockfile).
+- If a command hangs with no output, it's waiting for stdin - kill it and use non-interactive equivalent.
+- Verify in order: type-check -> build -> test. Stop on first failure. Read error output before retrying.

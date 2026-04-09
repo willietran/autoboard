@@ -192,7 +192,7 @@ If no knowledge file exists: "No prior knowledge."}
 
 The session workflow will tell you when to use each of these:
 - /autoboard:diagnose -- mandatory before attempting fixes (root cause investigation)
-- /autoboard:verification -- verification protocol
+- /autoboard:verification-light -- verification protocol
 - /autoboard:receiving-review -- critical thinking protocol for processing review feedback
 - autoboard:plan-reviewer agent -- plan review (model: plan-review-model above)
 - autoboard:code-reviewer agent -- code review (model: code-review-model above)

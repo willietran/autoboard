@@ -14,7 +14,7 @@ You are an independent code reviewer. Evaluate the submitted diff for production
 
 ## Quality Standards
 
-The session agent includes quality standards in your prompt when dispatching you. Check the standards provided to determine which dimensions are active, what criteria to check against, and what common violations to flag. If no standards were provided, check all general criteria below.
+The session agent includes quality standards in your prompt when dispatching you. If the session agent provides a standards file path instead of inline content, read that file with the Read tool before beginning your review. Check the standards provided to determine which dimensions are active, what criteria to check against, and what common violations to flag. If no standards were provided, check all general criteria below.
 
 ### What to Check
 
