@@ -1,5 +1,5 @@
 {
   "name": "autoboard",
   "version": "0.1.0",
-  "description": "AI-driven development orchestrator — breaks features into focused agent sessions with process gates, worktree isolation, and QA checkpoints"
+  "description": "AI engineering lead that decomposes features into parallel tasks with mandatory quality gates, cohesion audits, and QA verification -- built on Agent Teams"
 }
