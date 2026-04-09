@@ -9,7 +9,7 @@ description: Critical thinking protocol for processing review feedback — invok
 
 **Default: fix everything.** The only valid escape is proven harm.
 
-AI agents can fix a DRY violation in 30 seconds, export an interface in 10, add a test in 2 minutes. The cost of completeness is near-zero. The cost of leaving issues is compounding — every unfixed finding is a pattern the next session copies, a convention it drifts from, a shortcut it repeats. Do not evaluate whether feedback is "worth fixing." Evaluate whether fixing it would cause harm.
+AI agents can fix a DRY violation in 30 seconds, export an interface in 10, add a test in 2 minutes. The cost of completeness is near-zero. The cost of leaving issues is compounding — every unfixed finding is a pattern the next task copies, a convention it drifts from, a shortcut it repeats. Do not evaluate whether feedback is "worth fixing." Evaluate whether fixing it would cause harm.
 
 ## The Process
 
@@ -31,8 +31,8 @@ For each finding, run the decision tree:
   HARM CHECK: Would the fix cause demonstrable harm?
     a. Break existing functionality? → PUSH BACK (cite what breaks)
     b. Conflict with a documented design decision? → PUSH BACK (cite the doc + passage)
-    c. Destabilize code outside this session's scope? → PUSH BACK (cite the risk)
-    d. Duplicate work explicitly assigned to another session in manifest? → DEFER (cite session ID)
+    c. Destabilize code outside this task's scope? → PUSH BACK (cite the risk)
+    d. Duplicate work explicitly assigned to another task in manifest? → DEFER (cite task ID)
     → None of the above → FIX IT
 ```
 
@@ -48,8 +48,8 @@ If it's not on this list, it's not a valid pushback:
 1. **Factually wrong** — The code doesn't do what the reviewer claims. Cite the actual code that disproves the finding.
 2. **Fix breaks something** — The fix would cause a test failure, runtime error, or regression. Identify what breaks.
 3. **Conflicts with design doc** — A documented architectural decision (design doc, CLAUDE.md — not assumed) explicitly chose this approach. Cite the document and passage.
-4. **Destabilizes other sessions** — The fix requires changing files that other in-flight sessions depend on, risking merge conflicts or broken assumptions. Cite which sessions and why.
-5. **Assigned elsewhere** — Another session in the manifest is explicitly tasked with this exact area. Cite the session ID and task.
+4. **Destabilizes other tasks** — The fix requires changing files that other in-flight tasks depend on, risking merge conflicts or broken assumptions. Cite which tasks and why.
+5. **Assigned elsewhere** — Another task in the manifest is explicitly tasked with this exact area. Cite the task ID and task.
 
 ## Forbidden Dismissals
 
@@ -57,12 +57,12 @@ These rationalizations are never valid:
 
 - "Low risk" / "low impact" — Not a harm argument. Fix it.
 - "Technically works" / "not build-breaking" — Not a harm argument. Fix it.
-- "Out of scope for my session" — Codebase quality is always in scope. Fix it.
+- "Out of scope for my task" — Codebase quality is always in scope. Fix it.
 - "Pre-existing issue" — If you're touching this area, improve it. Fix it.
 - "Won't change during this project" — You don't know that. Fix it.
 - "Thin wrapper / pure constants" — Not exempt from quality standards. Fix it.
 - "Cosmetic / style preference" — Code organization affects agent navigability. Fix it.
-- "Future sessions will handle this" — Unless assigned in the manifest, wishful thinking. Fix it.
+- "Future tasks will handle this" — Unless assigned in the manifest, wishful thinking. Fix it.
 - "This is theoretical / no practical risk" — Agent navigability IS practical. Fix it.
 
 ## Legitimate Context the Reviewer May Lack
@@ -70,9 +70,9 @@ These rationalizations are never valid:
 Reviewers (plan reviewers, code reviewers, audit agents) don't see everything. Session agents have valid pushback when the reviewer doesn't know about:
 
 - Design doc decisions and their rationale
-- Cross-session dependencies in the manifest
+- Cross-task dependencies in the manifest
 - Architectural constraints from the brainstorm/planning phase
-- Future session assignments that cover this area
+- Future task assignments that cover this area
 
 This context powers pushback through the proven-harm criteria above. Frame it as "this fix would cause harm because..." — not "this isn't worth fixing because..."
 

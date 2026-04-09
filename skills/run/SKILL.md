@@ -166,10 +166,10 @@ done
 [ -d .codesight ] && ln -sf "$(pwd)/.codesight" /tmp/autoboard-{slug}-t{N}/.codesight
 ```
 
-**Run npm ci** in each worktree:
+**Run setup-command** (if configured) in each worktree to install dependencies:
 
 ```bash
-cd /tmp/autoboard-{slug}-t{N} && npm ci
+cd /tmp/autoboard-{slug}-t{N} && {setup-command}
 ```
 
 **Select subagent definition** based on task complexity:

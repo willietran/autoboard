@@ -298,7 +298,7 @@ Include a security checklist at the end of the manifest. Derive items from the d
 ## Architect Review Loop
 
 After generating the manifest:
-1. Dispatch the `autoboard:plan-reviewer` agent via the Agent tool (max 3 rounds). Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
+1. Dispatch the `plan-reviewer` agent via the Agent tool (max 3 rounds). Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
    - **Dependency correctness** - apply the worktree test to every task. Would this task's teammate succeed in a worktree containing only the repo's current main branch plus its completed dependencies? Are implicit dependencies captured (shared types, config, toolchains)?
    - **Complexity calibration** - is the baseline well-chosen? Does the distribution pass the 40% check (no more than 40% of tasks at 5+)? Are Opus tasks genuinely tricky/novel?
    - **QA gate placement** - gates at the right layer boundaries? Not over-gated? Acceptance criteria testable at the gate boundary (not testing UI before the UI layer ships)?

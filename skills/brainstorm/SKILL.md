@@ -110,10 +110,10 @@ On first write, create:
 docs/autoboard/<slug>/
 ├── design.md
 ├── decisions.md         (architectural decisions register, append-only)
-└── standards.md         (quality standards for session agents)
+└── standards.md         (quality standards for teammates)
 ```
 
-**Generating standards.md:** Compile a single quality standards document that will be injected verbatim into session agent prompts.
+**Generating standards.md:** Compile a single quality standards document that will be injected into teammate prompts via @ references.
 
 1. **Detect project structure** — infer which dimensions are relevant:
    - No frontend/UI → skip `frontend-quality`

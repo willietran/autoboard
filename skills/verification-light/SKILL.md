@@ -1,6 +1,6 @@
 ---
 name: verification-light
-description: Light verification protocol for session agents - build/test only. Enforces evidence-based verification with max 3 attempts. No completion claims without fresh evidence.
+description: Light verification protocol for teammates - build/test only. Enforces evidence-based verification with max 3 attempts. No completion claims without fresh evidence.
 ---
 
 # Verification

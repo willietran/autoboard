@@ -1,11 +1,11 @@
 ---
 name: standards
-description: Configure quality standards for a autoboard project — view, edit, or regenerate the standards.md file that gets injected into session agent prompts. Use when starting a project, adjusting quality settings, or reviewing what standards are active.
+description: Configure quality standards for a autoboard project -- view, edit, or regenerate the standards.md file that gets injected into teammate prompts. Use when starting a project, adjusting quality settings, or reviewing what standards are active.
 ---
 
 # Quality Standards Configuration
 
-Interactively configure the quality standards that session agents follow during implementation.
+Interactively configure the quality standards that teammates follow during implementation.
 
 ## HARD GATE
 

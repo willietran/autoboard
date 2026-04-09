@@ -216,7 +216,7 @@ Report results to the user and continue to next layer.
 
 ### Step 1 - Dispatch QA Validator
 
-Dispatch the `autoboard:qa-validator` agent via the Agent tool with model `qa-model` and these inputs:
+Dispatch the `qa-validator` agent via the Agent tool with model `qa-model` and these inputs:
 
 - QA-REPORT text (the full `~~~QA-REPORT` block)
 - Expected skips (from manifest's `expected-skips` list)

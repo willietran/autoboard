@@ -176,7 +176,7 @@ If neither acceptance criteria nor design doc are provided (e.g., session-level 
    a. Close/stop the browser tool (ignore errors if close itself fails). Use the tool's shutdown command — e.g., `stop`, `close`, `browser_close`, or equivalent. If the tool runs a persistent daemon or server, ensure it is stopped.
    b. Kill the dev server process.
 
-   Browser processes (Chromium) and dev servers persist if not explicitly closed, accumulating across sessions and QA gates. If this agent crashes before reaching this step (OOM, context overflow), the session wrapper's process-group cleanup is the backstop — it kills the entire process tree on exit.
+   Browser processes (Chromium) and dev servers persist if not explicitly closed, accumulating across QA gates. If this agent crashes before reaching this step (OOM, context overflow), Agent Teams process management is the backstop.
 
 ### Report
 
