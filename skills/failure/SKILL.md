@@ -122,10 +122,17 @@ All other failures. Proceed to Step 3 for diagnosis and retry.
 
 ```bash
 "$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-s{N}-brief.md \
-  --model {model} --cwd /tmp/autoboard-{slug}-s{N} \
+  --model {model} \
+  --effort {effort from sessions table} \
+  --cwd /tmp/autoboard-{slug}-s{N} \
   --settings "$PERM_FILE" \
+  --standards "docs/autoboard/{slug}/standards.md" \
+  --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
+  --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
   > /tmp/autoboard-{slug}-s{N}-output-retry{M}.jsonl 2>&1
 ```
+
+If `skip-permissions: true` in manifest, use `--skip-permissions` instead of `--settings`.
 
 **Tracking:** If active, `post-comment(session, "Session failed in {phase}. Diagnosis: {your assessment}. Retrying with adjusted brief.")` and `move-ticket(session, Failed)`.
 

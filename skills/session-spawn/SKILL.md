@@ -89,12 +89,6 @@ Progress directory: /tmp/autoboard-{slug}-progress/
 
 {Copy each task's full record from the manifest: title, creates, modifies, depends on, requirements, explore targets, TDD phase, test approach, key test scenarios, complexity, commit message}
 
-## Knowledge from Prior Sessions
-
-Knowledge file: {absolute path to docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md}
-Read this file with the Read tool during your Explore phase for curated cross-session knowledge.
-If Layer 0 or file doesn't exist: no prior knowledge.
-
 ## Configuration
 
 - Verify command: {verify from frontmatter}
@@ -144,6 +138,7 @@ Spawn all sessions in the layer as **parallel background Bash commands** in a si
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
+  --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
@@ -158,12 +153,13 @@ If the manifest has `skip-permissions: true`, use `--skip-permissions` instead o
   --skip-permissions \
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
+  --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
-Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, effort level mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
+Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, effort level mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline/knowledge files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
 
-**Do NOT paste standards or test-baseline content into the brief.** The shell script appends these files mechanically via `--standards` and `--test-baseline` flags. If the files don't exist, the script silently skips them.
+**Do NOT paste standards, test-baseline, or knowledge content into the brief.** The shell script appends these files mechanically via `--standards`, `--test-baseline`, and `--knowledge` flags. If the files don't exist, the script silently skips them.
 
 Each session runs as a `claude -p` subprocess — a **full main agent** with complete tool access, including the Agent tool. This means sessions CAN spawn Explore subagents (haiku), plan-reviewer, and code-reviewer subagents.
 

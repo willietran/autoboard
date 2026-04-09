@@ -115,8 +115,8 @@ Then exit. The orchestrator will read both sides and arbitrate.
 
 Exploration happens in two steps. Use Claude Code's built-in Explore subagent for both. When spawning Explore subagents, use the `explore-model` from your session brief's Configuration section (default: haiku).
 
-**Step 1: Explore prior sessions' work.** If your session brief includes `## Knowledge from Prior Sessions` (i.e., you are not in Layer 0):
-- Read the knowledge entries to understand what utilities, patterns, and conventions already exist
+**Step 1: Explore prior sessions' work.** If your session brief includes a `## Knowledge from Prior Sessions` section (i.e., you are not in Layer 0):
+- Review the knowledge entries to understand what utilities, patterns, and conventions already exist
 - Explore the file paths mentioned — verify they exist and understand their APIs
 - **Action on overlap:** If a prior session already built something your tasks plan to create, use the existing implementation. Adjust your plan: convert Creates entries to Modifies (if you need to extend it) or remove them (if you can use it as-is). Do NOT rebuild what already exists.
 

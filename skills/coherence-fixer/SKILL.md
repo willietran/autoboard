@@ -110,7 +110,6 @@ prior fixer's merge conflicted. Changes merged by other fixers since then:
 ## Reference Files
 
 Read these files with the Read tool before planning your fix:
-- Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md} (skip if file doesn't exist -- no prior knowledge)
 - Design doc: {absolute path to design doc} -- read the ## Critical User Flows section
 - Manifest: {absolute path to manifest.md} -- read Key test scenarios from task records
 
@@ -160,10 +159,12 @@ Spawn all fixers in this round as **parallel background Bash commands**:
 ```bash
 "$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
   --model {model from frontmatter} \
+  --effort {effort of the session that produced the failing code} \
   --cwd /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
+  --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
   > /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-output.jsonl 2>&1
 ```
 

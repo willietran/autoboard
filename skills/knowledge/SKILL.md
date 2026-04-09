@@ -43,7 +43,7 @@ Verify the knowledge file exists at `docs/autoboard/{slug}/sessions/layer-{N}-kn
 
 ## What This Enables
 
-The session-spawn skill reads `layer-{N}-knowledge.md` and pastes it into each next-layer session's brief. This means next-layer sessions start with:
+The spawn script injects `layer-{N}-knowledge.md` into each next-layer session's prompt via the `--knowledge` flag. This means next-layer sessions start with:
 - Awareness of what was built (without reading all prior code)
 - Clear conventions to follow (no conflicting patterns)
 - Knowledge of shared utilities they should use (no reinvention)

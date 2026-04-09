@@ -165,9 +165,6 @@ disabling checks. The fix must be elegant, clean, and durable -- it
 should be indistinguishable from code written correctly the first time.
 If the root cause requires a significant refactor, do the refactor.
 
-Knowledge from prior sessions: {absolute path to layer-{N}-knowledge.md}
-Read this file with the Read tool before planning your fix. Skip if file doesn't exist -- no prior knowledge.
-
 ## Configuration
 
 - Verify command: {verify from frontmatter}
@@ -202,10 +199,12 @@ Spawn all fixers in this round as **parallel background Bash commands**:
 ```bash
 "$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md \
   --model {model from frontmatter} \
+  --effort {effort of the session that produced the failing code} \
   --cwd /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group} \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
+  --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
   > /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-output.jsonl 2>&1
 ```
 
