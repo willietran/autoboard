@@ -205,6 +205,7 @@ Spawn all fixers in this round as **parallel background Bash commands**:
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
   --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
+  --codesight ".codesight/wiki/index.md" \
   > /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-output.jsonl 2>&1
 ```
 

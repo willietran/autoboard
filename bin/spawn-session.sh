@@ -13,11 +13,12 @@ set -euo pipefail
 # Usage: spawn-session.sh <brief-file> --model <model> --cwd <worktree-path>
 #        [--effort <low|medium|high|max>] [--skip-permissions]
 #        [--standards <file>] [--test-baseline <file>] [--knowledge <file>]
+#        [--codesight <file>]
 
 PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 BRIEF_FILE="" MODEL="" CWD="." SKIP_PERMISSIONS=false SETTINGS_FILE=""
-STANDARDS_FILE="" TEST_BASELINE_FILE="" KNOWLEDGE_FILE="" EFFORT=""
+STANDARDS_FILE="" TEST_BASELINE_FILE="" KNOWLEDGE_FILE="" CODESIGHT_FILE="" EFFORT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --model) MODEL="$2"; shift 2 ;;
@@ -28,6 +29,7 @@ while [[ $# -gt 0 ]]; do
     --standards) STANDARDS_FILE="$2"; shift 2 ;;
     --test-baseline) TEST_BASELINE_FILE="$2"; shift 2 ;;
     --knowledge) KNOWLEDGE_FILE="$2"; shift 2 ;;
+    --codesight) CODESIGHT_FILE="$2"; shift 2 ;;
     *)       BRIEF_FILE="$1"; shift ;;
   esac
 done
@@ -74,6 +76,15 @@ if [[ -n "$KNOWLEDGE_FILE" && -f "$KNOWLEDGE_FILE" ]]; then
 ## Knowledge from Prior Sessions
 
 $(cat "$KNOWLEDGE_FILE")"
+fi
+if [[ -n "$CODESIGHT_FILE" && -f "$CODESIGHT_FILE" ]]; then
+  PROMPT="$PROMPT
+
+## Codebase Context (codesight)
+
+The following index lists available codebase context articles. Read the articles relevant to your tasks during the Explore phase.
+
+$(cat "$CODESIGHT_FILE")"
 fi
 
 # Build argument array (no string interpolation into shell commands)

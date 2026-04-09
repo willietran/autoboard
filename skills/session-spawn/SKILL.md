@@ -29,9 +29,10 @@ git worktree add /tmp/autoboard-{slug}-s{N} -b autoboard/{slug}-s{N} {feature-br
 
 ### Environment Symlinking
 
-Symlink gitignored environment files into the worktree (git worktrees don't include gitignored files):
+Symlink gitignored environment files and codesight context into the worktree (git worktrees don't include gitignored files):
 ```bash
 for f in .env*; do [ -f "$f" ] && ln -sf "$(pwd)/$f" /tmp/autoboard-{slug}-s{N}/"$f"; done
+[ -d .codesight ] && ln -sf "$(pwd)/.codesight" /tmp/autoboard-{slug}-s{N}/.codesight
 ```
 
 ### Progress Directory
@@ -139,6 +140,7 @@ Spawn all sessions in the layer as **parallel background Bash commands** in a si
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
   --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
+  --codesight ".codesight/wiki/index.md" \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
@@ -154,12 +156,13 @@ If the manifest has `skip-permissions: true`, use `--skip-permissions` instead o
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
   --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
+  --codesight ".codesight/wiki/index.md" \
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
-Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, effort level mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline/knowledge files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
+Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, effort level mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline/knowledge/codesight files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
 
-**Do NOT paste standards, test-baseline, or knowledge content into the brief.** The shell script appends these files mechanically via `--standards`, `--test-baseline`, and `--knowledge` flags. If the files don't exist, the script silently skips them.
+**Do NOT paste standards, test-baseline, knowledge, or codesight content into the brief.** The shell script appends these files mechanically via `--standards`, `--test-baseline`, `--knowledge`, and `--codesight` flags. If the files don't exist, the script silently skips them.
 
 Each session runs as a `claude -p` subprocess — a **full main agent** with complete tool access, including the Agent tool. This means sessions CAN spawn Explore subagents (haiku), plan-reviewer, and code-reviewer subagents.
 
