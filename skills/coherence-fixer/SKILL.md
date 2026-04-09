@@ -54,6 +54,12 @@ for f in .env*; do [ -f "$f" ] && ln -sf "$(pwd)/$f" /tmp/autoboard-{slug}-coher
 [ -d .codesight ] && ln -sf "$(pwd)/.codesight" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}/.codesight
 ```
 
+**Run setup-command** in each worktree to install dependencies:
+
+```bash
+cd /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} && {setup-command from manifest config}
+```
+
 ### 2c. Dispatch Fixer Teammates
 
 Spawn fixer teammates via the Agent tool. Each fixer receives a prompt with its assignment, the COHERENCE-REPORT path, and mandatory debugging instructions.

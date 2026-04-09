@@ -30,7 +30,7 @@ Build verification runs every layer regardless. Functional QA runs only when the
 
 ## Pre-QA Environment Sync
 
-Run the manifest's `setup` command now (if configured) to ensure the environment is current with all merged code from this layer. This is intentionally redundant with the setup step in the run skill - QA must test against a fresh environment, and the setup command is idempotent.
+Run the manifest's `setup-command` now (if configured) to ensure the environment is current with all merged code from this layer. This is intentionally redundant with the setup step in the run skill - QA must test against a fresh environment, and the setup command is idempotent.
 
 If the setup command fails, diagnose and fix before dispatching the QA subagent. A QA gate against a broken environment produces false failures that waste fixer attempts.
 
@@ -198,7 +198,7 @@ Agent(
 
 **Immediately** after receiving the QA subagent's output, extract the `~~~QA-REPORT` block.
 
-Write it to `docs/autoboard/{slug}/sessions/qa-L{N}.md` so fixer briefs can reference it by path.
+Write it to `docs/autoboard/{slug}/sessions/qa-L{N}-r{round}.md` (round starts at 0). Keep prior round reports -- the qa-validator needs them to cross-reference fabrication claims. Also write the latest report to `qa-L{N}-latest.md` for quick access by fixer briefs.
 
 If you cannot extract the QA-REPORT block (subagent did not follow the format), save the subagent's full final output - never fall back to a generic one-liner.
 

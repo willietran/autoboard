@@ -233,7 +233,7 @@ Run the same auto-detection from [Full Mode Step 2](#step-2-select-browser-tool-
 
 ### Step 2: Check Environment Variables
 
-Read the manifest's `env-template` field from the manifest config (frontmatter).
+Read the manifest's `env-template` field from the config section.
 
 - **No `env-template` field in manifest:** skip env check entirely — project doesn't use env vars.
 - **`env-template` field exists + `.env.local` missing + template file exists:** copy the template to `.env.local`. Tell the user to fill in real values before `/run` for full E2E QA.
@@ -269,7 +269,7 @@ Teammates run non-interactively -- they cannot answer prompts. All provisioning 
 
 ### Step 3: Run Setup Command
 
-If the manifest config includes a `setup-command` field (or `setup` for backward compatibility), run it.
+If the manifest config includes a `setup-command` field, run it.
 
 - Success → `Setup: OK ({command})`
 - Failure → `Setup: FAILED — {error}`. Tell the user what went wrong.
@@ -277,7 +277,7 @@ If the manifest config includes a `setup-command` field (or `setup` for backward
 
 ### Step 4: Capture Test Baseline
 
-If the manifest includes a `verify-command` (or `verify` for backward compatibility), run it now and record which tests fail. This baseline lets verification distinguish pre-existing failures from new regressions.
+If the manifest includes a `verify-command`, run it now and record which tests fail. This baseline lets verification distinguish pre-existing failures from new regressions.
 
 - Save failing test names/patterns to `docs/autoboard/{slug}/test-baseline.md`
 - If all tests pass, write "All tests pass — clean baseline"

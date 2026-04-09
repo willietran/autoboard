@@ -67,6 +67,12 @@ for f in .env*; do [ -f "$f" ] && ln -sf "$(pwd)/$f" /tmp/autoboard-{slug}-qa-fi
 [ -d .codesight ] && ln -sf "$(pwd)/.codesight" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}/.codesight
 ```
 
+**Run setup-command** in each worktree to install dependencies:
+
+```bash
+cd /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group} && {setup-command from manifest config}
+```
+
 ### 3c. Dispatch Fixer Teammates
 
 Spawn fixer teammates via the Agent tool. Each fixer receives a prompt with its assignment, the QA-REPORT path, and mandatory debugging instructions.

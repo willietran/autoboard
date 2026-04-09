@@ -46,6 +46,8 @@ opus-effort-map:
 
 max-batch-size: 5
 qa-mode: build
+env-template: .env.example    # Path to env template file (optional, omit if not needed)
+qa-setup: npm run seed:test-data  # Command to prepare env for browser QA (optional, omit if not needed)
 
 planning-model: opus
 plan-review-model: sonnet
@@ -66,6 +68,8 @@ cohesion-model: sonnet
 - `opus-effort-map` - maps complexity to effort for Opus tasks only. Sonnet tasks do not use effort.
 - `max-batch-size` - max tasks planned together in one batch (default: 5). Larger layers are split into batches for planning and code review, but all tasks within a layer still implement in parallel.
 - `qa-mode` - `build` (default) or `full` (browser testing)
+- `env-template` - path to env template file (e.g., `.env.example`). Include if the project needs API keys, database URLs, or third-party credentials. Omit if not needed.
+- `qa-setup` - command to prepare the environment for browser QA (e.g., seed test data, create test users). Only relevant when `qa-mode: full`. Omit if not needed.
 
 **`qa-mode`** - ask the user via AskUserQuestion which QA mode they want:
 

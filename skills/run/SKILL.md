@@ -249,8 +249,8 @@ Prompt includes:
 The lead applies the receiving-review protocol (invoke `/autoboard:receiving-review` via Skill tool) to evaluate findings:
 
 - If APPROVE: proceed to next batch or layer-level gates
-- If REQUEST CHANGES with BLOCKING issues: spawn fixer teammates for each blocking issue, merge fixer work, re-run code review. Max 3 rounds.
-- Fixer teammates use the appropriate `autoboard-implementer*` subagent definition based on issue complexity. Each fixer gets: the blocking finding, the plan file path, the standards path, and the worktree path.
+- If REQUEST CHANGES with BLOCKING issues: for each blocking issue, create a worktree (`git worktree add /tmp/autoboard-{slug}-cr-fix-L{N}-b{B}-r{round} ...`), symlink .env files, run setup-command, then spawn a fixer teammate. Merge fixer work, re-run code review. Max 3 rounds.
+- Fixer teammates use the appropriate `autoboard-implementer*` subagent definition based on issue complexity. Each fixer gets: the blocking finding, the plan file path, the standards path, and the worktree path. Clean up fixer worktrees after successful merge.
 
 ### 2e. After All Batches in Layer
 
@@ -298,30 +298,16 @@ If the qa-gate returns FAIL with genuine code failures: invoke `/autoboard:qa-fi
 
 #### KNOWLEDGE (NON-NEGOTIABLE)
 
-Dispatch `knowledge-curator` subagent via the Agent tool with model `cohesion-model`.
+Invoke `/autoboard:knowledge` via the Skill tool. Pass: slug, layer number, and the list of task IDs in this layer.
 
-Prompt includes:
-- Slug and layer number
-- Per-task knowledge file paths: `/tmp/autoboard-{slug}-t{N}-knowledge.md` for each task in this layer
-- Prior layer knowledge path: `docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md` (if exists)
-- Output file path: `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`
+The knowledge skill handles curator dispatch, conflict review, per-task file cleanup, and output writing.
 
-After the curator returns, review the Conflicts Resolved section. Verify resolutions align with the design doc. Correct any wrong resolutions by editing the knowledge file.
-
-Clean up per-task knowledge files:
-
-```bash
-rm -f /tmp/autoboard-{slug}-t*-knowledge.md
-```
-
-Commit the knowledge file so the next layer's worktrees have it:
+After the knowledge skill returns, commit the knowledge file so the next layer's worktrees have it:
 
 ```bash
 git add docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md
 git commit -m "docs: layer {N} knowledge for {slug}"
 ```
-
-**Verification:** Knowledge file exists at the output path and is committed.
 
 | Thought that means STOP | Reality |
 |---|---|
