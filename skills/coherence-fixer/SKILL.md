@@ -1,15 +1,15 @@
 ---
 name: coherence-fixer
-description: Dispatch fixer session agents for coherence issues that survived pre-screening. Groups by dimension, spawns parallel fixers, manages round-based retry loop. Re-invoke at the start of each new layer.
+description: Dispatch fixer teammates for coherence issues that survived screening. Groups by dimension, spawns parallel fixers via Agent tool, manages round-based retry loop with post-merge circuit breaker. Re-invoke at the start of each new layer.
 ---
 
 # Coherence Fixer
 
-Dispatch full session agents to fix coherence issues that survived orchestrator pre-screening. Each fixer loads `/autoboard:session-workflow` and follows the complete Explore -> Plan -> Review -> Implement -> Verify -> Code Review -> Commit lifecycle.
+Dispatch fixer teammates to fix coherence issues that survived screener evaluation. Each fixer teammate must invoke `/autoboard:diagnose` before attempting any fixes.
 
-**Prerequisites:** A COHERENCE-REPORT with findings that survived orchestrator pre-screening (BLOCKING, INFO, or both). If tracking is active, the coherence-audit skill has already created an on-demand issue -- use its issue number and item ID.
+**Prerequisites:** A COHERENCE-REPORT with findings that survived screening (BLOCKING, INFO, or both).
 
-**Ownership model:** This skill owns the entire retry loop. The orchestrator invokes it once. It manages grouping, parallel dispatch, merging, audit re-runs, and retry logic internally. It returns only when the audit is clean or the round limit is exhausted.
+**Ownership model:** This skill owns the entire retry loop. The lead invokes it once. It manages grouping, parallel dispatch, merging, audit re-runs, and retry logic internally. It returns only when the audit is clean or the round limit is exhausted.
 
 ---
 
@@ -28,7 +28,7 @@ Parse the COHERENCE-REPORT and group findings by their source dimension.
   - Runtime: `performance`, `observability`, `data-modeling`
 - **Never combine across conceptual groups.** Security findings and test-quality findings go to separate fixers.
 - **If total findings <= 5 from a single dimension:** Dispatch a single fixer (no fragmentation).
-- Respect `max-parallel` concurrency limit from the manifest.
+- Respect `max-batch-size` concurrency limit from the manifest.
 
 For single-fixer dispatch, use group `g1`.
 
@@ -46,53 +46,46 @@ ROUND_CHECKPOINT=$(git rev-parse HEAD)
 
 ### 2b. Create Worktrees
 
-Create worktrees **sequentially** (avoids git lock contention). All branch from feature branch HEAD at this point:
+The lead creates worktrees **sequentially** (avoids git lock contention). All branch from feature branch HEAD at this point:
 
 ```bash
 git worktree add /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} -b autoboard/{slug}-coherence-fix-L{N}-r{round}-g{group} autoboard/{slug}
 for f in .env*; do [ -f "$f" ] && ln -sf "$(pwd)/$f" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}/"$f"; done
+[ -d .codesight ] && ln -sf "$(pwd)/.codesight" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}/.codesight
 ```
 
-### 2c. Write Briefs
+### 2c. Dispatch Fixer Teammates
 
-Write each fixer's brief to `/tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md`. The brief uses the **same template as today** -- all existing sections preserved. Two sections are added: "Your Assignment" (after Session Brief) and "Prior Round Summary" (for rounds > 0).
+Spawn fixer teammates via the Agent tool. Each fixer receives a prompt with its assignment, the COHERENCE-REPORT path, and mandatory debugging instructions.
+
+Select the teammate model based on finding complexity:
+- Straightforward convention or naming fixes: sonnet
+- Complex architectural or cross-cutting findings, or findings that persisted across rounds: opus
+
+Each fixer teammate prompt:
 
 ```
-You are a autoboard session agent.
+You are an autoboard fixer teammate.
 
-Your FIRST action must be to invoke /autoboard:session-workflow via the Skill tool.
-This loads your full workflow and shell safety guidelines.
-Do NOT write any code or make any changes before invoking this skill.
+## Assignment
 
-## Session Brief
-
-Session: Coherence Fix -- Layer {N}, Round {round}, Group {group}
-Feature branch: autoboard/{slug}
-Session branch: autoboard/{slug}-coherence-fix-L{N}-r{round}-g{group}
-Project directory: docs/autoboard/{slug}/
-Worktree path: /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}
-Progress directory: /tmp/autoboard-{slug}-progress/
-
-[COHERENCE FIX] Layer coherence audit found issues after Layer {N}.
-
-## Your Assignment
-
-You are fixer {G} of {N} parallel fixers for round {round}.
+You are fixer {G} of {total} parallel fixers for round {round}.
 Your dimension(s): {dimension name(s)}
 Fix ONLY these items:
 
 {list of assigned findings with their dimension, severity, description, file locations, and evidence}
 
-Read the full COHERENCE-REPORT from the file path in the Coherence Findings section below. Other fixers are handling:
-{for each other fixer: "- Fixer {K}: {dimension(s)} -- {brief summary of findings}"}
+{For single-fixer rounds (only 1 group):}
+You are the only fixer for this round. Fix all items listed below.
+
+{For multi-fixer rounds, also include:}
+Other fixers are handling:
+{for each other fixer: "- Fixer {K}: {dimension(s)} - {brief summary of findings}"}
 
 Understanding what others are fixing helps you avoid conflicting changes.
-If your fix would also resolve items assigned to another fixer, that is fine --
+If your fix would also resolve items assigned to another fixer, that is fine -
 the audit re-run will detect it. Do NOT modify files solely for another
 fixer's items if you can avoid it.
-
-{For single-fixer rounds (only 1 group), simplify to:}
-You are the only fixer for this round. Fix all items listed below.
 
 ## Coherence Findings
 
@@ -105,118 +98,83 @@ You MUST read this file with the Read tool for the full COHERENCE-REPORT before 
 Round {R-1} resolved: {items}. Still failing: {items}.
 {If carry-over from merge conflict:} Your items were carried over because the
 prior fixer's merge conflicted. Changes merged by other fixers since then:
-{diff summary from git diff ROUND_CHECKPOINT..HEAD}
+{diff summary from git diff $ROUND_CHECKPOINT..HEAD}
 
 ## Reference Files
 
 Read these files with the Read tool before planning your fix:
-- Design doc: {absolute path to design doc} -- read the ## Critical User Flows section
-- Manifest: {absolute path to manifest.md} -- read Key test scenarios from task records
+- Design doc: {absolute path to design doc} - read the ## Critical User Flows section
+- Manifest: {absolute path to manifest.md} - read Key test scenarios from tasks
+- Standards: {absolute path to docs/autoboard/{slug}/standards.md}
 
-These inform test quality remediation -- if the BLOCKING findings include test quality issues,
-the fix should ensure tests cover these scenarios.
+## Mandatory Debugging Protocol (NON-NEGOTIABLE)
 
-Your job: fix all items in your assignment that survived orchestrator pre-screening -- BLOCKING and INFO alike. Address BLOCKING items first. Apply the receiving-review decision tree to each finding: fix unless the fix would cause demonstrable harm (breaks something, conflicts with design doc, destabilizes other sessions).
+Before attempting ANY fix, you MUST:
+1. Invoke /autoboard:diagnose via the Skill tool to reproduce the failure and trace root cause.
+   This loads a structured four-phase methodology: Reproduce -> Trace -> Hypothesize -> Fix.
+   Follow it completely - no shortcuts.
+2. Only after root cause is identified, plan and implement the fix.
+3. After implementing, run full verification to confirm the fix.
+4. Only mark your task complete if verification passes.
 
-Follow the full session workflow: explore what's broken, plan the fix,
-get it reviewed, implement, verify, get code reviewed, commit.
+Do NOT skip reproduction. Do NOT skip systematic debugging.
 
-IMPORTANT: Your fix must solve the ROOT CAUSE, not paper over symptoms.
+Your fix must solve the ROOT CAUSE, not paper over symptoms.
 No hacky workarounds, no `as any` casts, no skipping tests, no
-disabling checks. The fix must be elegant, clean, and durable -- it
+disabling checks. The fix must be elegant, clean, and durable - it
 should be indistinguishable from code written correctly the first time.
 If the root cause requires a significant refactor, do the refactor.
 
+Do NOT rewrite working code. Only fix what your assignment identifies.
+
 ## Configuration
 
-- Verify command: {verify from frontmatter}
-- Dev server: {dev-server from frontmatter}
-- Explore model: {explore-model from frontmatter, default: haiku}
-- Plan review model: {plan-review-model from frontmatter, default: sonnet}
-- Code review model: {code-review-model from frontmatter, default: sonnet}
-
-## Available Skills and Agents
-
-The session workflow will tell you when to use each of these:
-- /autoboard:verification-light -- verification protocol
-- /autoboard:receiving-review -- critical thinking protocol for processing review feedback
-- autoboard:plan-reviewer agent -- plan review (model: plan-review-model above)
-- autoboard:code-reviewer agent -- code review (model: code-review-model above)
+- Verify command: {verify from config}
+- Dev server: {dev-server from config}
+- Worktree: /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}
+- Feature branch: autoboard/{slug}
 ```
 
-#### Tracking Section
+Spawn at most `max-batch-size` fixers concurrently. If more groups exist than `max-batch-size`, spawn the next when one completes.
 
-If tracking is active, append the `## Tracking` section using the coherence fix issue number and item ID from the coherence-audit skill. Use the `session-brief-section` action from the loaded tracking provider -- same format as session briefs.
+### 2d. Wait for Completion
 
-The fixer is a full session agent and will move through Exploring -> Planning -> Implementing -> Verifying -> Code Review phases on the tracking board.
+Teammates notify automatically when they complete their tasks. Do NOT poll or sleep.
 
-If tracking is disabled, omit the Tracking section entirely.
-
-### 2d. Spawn Fixers
-
-Spawn all fixers in this round as **parallel background Bash commands**:
-
-```bash
-"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
-  --model {model from frontmatter} \
-  --effort {effort of the session that produced the failing code} \
-  --cwd /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} \
-  --settings "$PERM_FILE" \
-  --standards "docs/autoboard/{slug}/standards.md" \
-  --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
-  --knowledge "docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md" \
-  --codesight ".codesight/wiki/index.md" \
-  > /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-output.jsonl 2>&1
-```
-
-If `skip-permissions: true` in manifest, use `--skip-permissions` instead of `--settings`.
-
-Run each with Bash `run_in_background: true`. Spawn at most `max-parallel` fixers concurrently. If more groups exist than `max-parallel`, use the same sliding window as session-spawn (spawn next when one completes).
-
-### 2e. Wait for Completion
-
-Background Bash commands notify automatically when they complete. Do NOT poll or sleep.
-
-### 2f. Merge Fixers
+### 2e. Merge Fixers
 
 **Pause future layers** until all fixers complete and the re-audit passes.
 
 After all fixers in the round complete:
 
-1. **Read session status files** from `docs/autoboard/{slug}/sessions/` in each fixer worktree
-2. **Merge each fixer** to the feature branch sequentially (squash merge -- see merge skill). Commit message: `Coherence Fix L{N} r{round} g{group}: {dimension(s)}`
-3. **If a fixer merge conflicts** with a prior fixer's merge in the same round: abort the merge, skip this fixer, carry over its items to the next round with diff context
-4. **Tracking (if active):** `post-comment(coherence-issue, "Round {round} complete. {M} of {N} fixers merged. {summary}")`
+1. **Merge each fixer** to the feature branch sequentially (squash merge). Commit message: `Coherence Fix L{N} r{round} g{group}: {dimension(s)}`
+2. **If a fixer merge conflicts** with a prior fixer's merge in the same round: abort the merge, skip this fixer, carry over its items to the next round with diff context
 
-### 2g. Post-Merge Verification (Circuit Breaker)
+### 2f. Post-Merge Verification (Circuit Breaker)
 
 After all merges in the round, run the verify command:
 
 ```bash
-{verify command from frontmatter}
+{verify command from config}
 ```
 
-If verification **passes**: proceed to audit re-run (Step 2h).
+If verification **passes**: proceed to audit re-run (Step 2g).
 
 If verification **fails** (merge produced broken code):
 - Roll back to `ROUND_CHECKPOINT`: `git reset --hard $ROUND_CHECKPOINT`
-- Next round dispatches a **single fixer** for all remaining items (circuit breaker -- parallel merges caused conflicts, fall back to serial)
+- Next round dispatches a **single fixer** for all remaining items (circuit breaker - parallel merges caused conflicts, fall back to serial)
 - Log: "Circuit breaker: post-merge verify failed. Falling back to single fixer for round {round+1}."
 
-### 2h. Re-run Coherence Audit
+### 2g. Re-run Coherence Audit
 
 Re-run the coherence audit with the same checkpoint and same dimensions.
 
-- **No findings survive re-screening:** Audit is clean. Done. Proceed to 2i.
+- **No findings survive re-screening:** Audit is clean. Done. Proceed to 2h.
 - **Findings remain:** Proceed to Step 3 (Retry Logic).
 
-### 2i. On Pass
+### 2h. On Pass
 
-**Tracking (if active):**
-- `close-ticket(coherence-issue)`
-- `move-ticket(coherence-issue, Done)`
-
-Clean up all fixer worktrees and branches from this gate. Return to the orchestrator.
+Clean up all fixer worktrees and branches from this gate. Return to the lead.
 
 ---
 
@@ -225,7 +183,7 @@ Clean up all fixer worktrees and branches from this gate. Return to the orchestr
 ### Progress Detection
 
 Compare consecutive COHERENCE-REPORTs to detect progress:
-- **Progress** (findings changed -- previous issues fixed, even if new ones surfaced): Reset the consecutive-failure counter to 0. Log: "Round {R}: resolved {findings}. New findings: {findings}. Dispatching next round."
+- **Progress** (findings changed - previous issues fixed, even if new ones surfaced): Reset the consecutive-failure counter to 0. Log: "Round {R}: resolved {findings}. New findings: {findings}. Dispatching next round."
 - **No progress** (same findings persist unchanged): Increment the consecutive-failure counter. Log: "Round {R}: no progress on {findings}. {remaining} rounds left."
 
 ### Limits
@@ -234,29 +192,23 @@ Compare consecutive COHERENCE-REPORTs to detect progress:
 - **Max 3 consecutive non-progress rounds.** If 3 rounds in a row fail to resolve any items, escalate early.
 - **Never ask the user** during the loop. Dispatch fixers automatically until the audit is clean or limits are reached.
 
-Each fixer must explore the codebase and create a fix plan before implementing -- no blind retries.
+Each fixer must invoke `/autoboard:diagnose` and trace root cause before implementing - no blind retries.
 
 ### Carry-Over Items
 
-When items carry over to the next round (from failures or merge conflicts), the next round's brief includes:
+When items carry over to the next round (from failures or merge conflicts), the next round's prompt includes:
 - The updated COHERENCE-REPORT from the latest audit re-run
 - A "## Prior Round Summary" showing what was resolved and what remains
 - For merge-conflict carry-overs: the diff of what other fixers merged (`git diff $ROUND_CHECKPOINT..HEAD`)
 
-Re-group the remaining items for the next round (Step 1). The grouping may change -- fewer items may mean a single fixer suffices.
+Re-group the remaining items for the next round (Step 1). The grouping may change - fewer items may mean a single fixer suffices.
 
 ### On Limit Reached
 
-**Tracking (if active):**
-```
-post-comment(coherence-issue, "Coherence fixer limit reached after {M} rounds. Escalating to user.")
-move-ticket(coherence-issue, Failed)
-```
-
-Escalate to the user -- report the persistent findings and what was attempted:
+Escalate to the user - report the persistent findings and what was attempted:
 
 ```
-Coherence audit failed -- fixer limit reached ({M} rounds exhausted).
+Coherence audit failed - fixer limit reached ({M} rounds exhausted).
 The audit must pass before proceeding to QA.
 
 Round summary:
