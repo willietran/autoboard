@@ -5,55 +5,39 @@ description: Resolve project, parse manifest, run preflight checks, and display 
 
 # Setup
 
-**You are the orchestrator running `/autoboard:run`.** This is your setup phase — not a delegated task. When these steps complete, you continue executing `/autoboard:run` Step 2. There is no handoff — you ARE the orchestrator.
+**You are the lead running `/autoboard:run`.** This is your setup phase - not a delegated task. When these steps complete, you continue executing `/autoboard:run` Step 2. There is no handoff - you ARE the lead.
 
 ---
 
-## Step 0: Resolve Plugin Directory
-
-Resolve the autoboard plugin directory and persist it for the entire run. All downstream skills (session-spawn, qa-fixer, coherence-fixer, failure) read from this file to find `bin/spawn-session.sh` and `config/`.
-
-```bash
-# Resolve autoboard plugin directory
-if [[ -f bin/spawn-session.sh ]]; then
-  AUTOBOARD_DIR="$(cd "$(dirname bin/spawn-session.sh)/.." && pwd)"
-elif command -v mdfind >/dev/null 2>&1; then
-  AUTOBOARD_DIR="$(dirname "$(dirname "$(mdfind -name 'spawn-session.sh' -onlyin "$HOME" 2>/dev/null | grep -m1 'autoboard/bin')")")"
-else
-  AUTOBOARD_DIR="$(dirname "$(dirname "$(find "$HOME" -maxdepth 6 -name 'spawn-session.sh' -path '*/autoboard/bin/*' -type f 2>/dev/null | head -1)")")"
-fi
-echo "$AUTOBOARD_DIR" > /tmp/autoboard-plugin-dir
-```
-
-Verify: `[[ -f "$AUTOBOARD_DIR/bin/spawn-session.sh" ]] && echo "OK: $AUTOBOARD_DIR" || echo "FAIL: could not find autoboard plugin directory"`
-
-If verification fails, ask the user for the plugin directory path.
-
----
-
-## Step 1: Resolve Project
+## Step 1: Resolve Project and Verify Environment
 
 Resolve the project path from the argument:
 - If a slug is provided: `docs/autoboard/<slug>/`
 - If a full path is provided: use it directly
 
-Verify git prerequisites:
-1. Run `git rev-parse --git-dir` — if it fails, initialize: `git init && git add -A && git commit -m "Initial commit"`
-2. Run `git log -1` — if it fails (no commits): `git add -A && git commit -m "Initial commit"`
+**Agent Teams flag check:**
+```bash
+[[ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" == "1" ]] && echo "OK: Agent Teams enabled" || echo "FAIL: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS must be set to 1"
+```
+If not set, stop and tell the user to set the flag before running autoboard.
 
-Ensure you're on the feature branch:
+**Git prerequisites:**
+1. Run `git rev-parse --git-dir` - if it fails, initialize: `git init && git add -A && git commit -m "Initial commit"`
+2. Run `git log -1` - if it fails (no commits): `git add -A && git commit -m "Initial commit"`
+
+**Feature branch checkout:**
 ```bash
 git checkout autoboard/<slug>
 ```
-If it doesn't exist, something went wrong during brainstorm — create it:
+If it doesn't exist, something went wrong during brainstorm - create it:
 ```bash
 git checkout -b autoboard/<slug>
 ```
 
-Check for required files:
-1. `manifest.md` exists — proceed to Step 2
-2. `design.md` exists but no `manifest.md` — tell the user to run `/autoboard:task-manifest <slug>` first
-3. Neither exists — tell the user to run `/autoboard:brainstorm` first
+**Required files:**
+1. `manifest.md` exists - proceed to Step 2
+2. `design.md` exists but no `manifest.md` - tell the user to run `/autoboard:task-manifest <slug>` first
+3. Neither exists - tell the user to run `/autoboard:brainstorm` first
 
 ---
 
@@ -61,69 +45,61 @@ Check for required files:
 
 Read `manifest.md`. Extract:
 
-### Config Frontmatter
+### Config Section
 
-The manifest starts with YAML frontmatter:
-```yaml
----
-model: opus                    # Model for session agents
-qa-model: sonnet               # Model for QA subagents
-explore-model: haiku           # Model for Explore subagents
-plan-review-model: sonnet      # Model for plan reviewer subagents
-code-review-model: sonnet      # Model for code reviewer subagents
-verify: npm install && npx tsc --noEmit && npm run build && npm test
-dev-server: npm run dev        # Command to start dev server for browser QA
-setup: npm run db:migrate      # Pre-run setup commands (optional, must be idempotent — runs before each layer)
-qa-setup: npm run seed:test-data  # Commands to prepare environment for browser QA (optional)
-env-template: .env.example     # Path to env template file (optional)
-retries: 5                     # Max retries per session (default: 5, per-session not global)
-tracking-provider: github      # Tracking provider: 'github' or 'none' (default: none)
-github-project: false          # Legacy field — equivalent to tracking-provider: github
-qa-mode: build-only            # build-only (default) or full (browser + build/test)
-# browser-tool:                # Set by setup after detecting available tools. Valid: gstack-browse, playwright-mcp, agent-browser, or any CLI/MCP browser tool
-max-parallel: 4                # Max concurrent sessions per layer (default: 4)
-skip-permissions: false        # Skip session permission scoping (default: false)
----
-```
+The manifest contains a `## Config` section with key-value pairs. Parse all fields:
 
-For backward compatibility: `github-project: true` is treated as `tracking-provider: github`.
+**Required:** `feature`, `branch`, `verify-command`
 
-### Sessions
+**Optional with defaults:**
+| Field | Default |
+|---|---|
+| `setup-command` | none |
+| `dev-server` | none |
+| `default-teammate-model` | sonnet |
+| `opus-threshold` | 5 |
+| `opus-effort-map` | `5: high`, `8: max` |
+| `max-batch-size` | 5 |
+| `qa-mode` | build |
+| `planning-model` | opus |
+| `plan-review-model` | sonnet |
+| `code-review-model` | sonnet |
+| `qa-model` | sonnet |
+| `cohesion-model` | sonnet |
 
-Each session is marked with `## Session S<N>: <focus>` and contains:
-- `**Depends on:**` — list of session IDs this session requires
-- `**Tasks:**` — task list with complexity scores and TDD phases
+### Tasks
+
+Each task is marked with `### T<N>: <title>` and contains fields: `creates`, `modifies`, `depends-on` (task IDs or `none`), `requirements`, `key-test-scenarios`, `complexity` (1/2/3/5/8), `commit-message`, and optional `model` override.
+
+### Dependency Layers
+
+Compute layers from the `depends-on` fields:
+- **Layer 1:** All tasks with `depends-on: none`
+- **Layer 2:** All tasks whose dependencies are all in Layer 1
+- **Layer 3:** All tasks whose dependencies are all in Layers 1-2
+- etc.
+
+### Batch Sizing
+
+When a layer exceeds `max-batch-size`, split it into batches. Each batch gets its own planning and code review cycle. All tasks within a layer still implement in parallel - batching only affects planning and review scope.
 
 ### QA Gates
 
-QA gates are marked between horizontal rules:
-```markdown
----
-**QA Gate** — <description>. Run: <what to validate>.
----
-```
-
-### Layer Graph
-
-Build a dependency layer graph from sessions and QA gates:
-- **Layer 0:** Sessions with no dependencies
-- **Layer 1:** Sessions whose dependencies are all in Layer 0
-- **Layer N:** Sessions whose dependencies are all in Layers 0..N-1
-- **QA gates** are layer boundaries — all sessions before a QA gate must complete before sessions after it can start
+QA gates are marked with `### After Layer <N>` or `### Final` under `## QA Gates`. Build verification runs after every layer regardless. Lines with `functional: true` indicate browser/E2E testing should run for that gate. Extract the criteria list for each gate.
 
 ---
 
 ## Step 3: Preflight Checks
 
-Now that the manifest is parsed and config is available, run preflight checks.
+### Verification preflight
 
 Invoke `/autoboard:verification --preflight` via the Skill tool to run environment readiness checks. This detects browser tools, checks env vars, creates `.env.local` from templates if needed, and smoke-tests the dev server.
 
 After preflight reports, resolve any issues before proceeding:
 
-1. **Auto-generatable values** — generate them immediately (e.g., `openssl rand -base64 32` for encryption keys).
-2. **Empty env vars requiring interactive provisioning** — fill them now. You have full interactive access; session agents don't. Either provision directly or ask the user to run the interactive command.
-3. **Setup command failure** — diagnose and fix before proceeding.
+1. **Auto-generatable values** - generate them immediately (e.g., `openssl rand -base64 32` for encryption keys).
+2. **Empty env vars requiring interactive provisioning** - fill them now. You have full interactive access; teammates don't. Either provision directly or ask the user to run the interactive command.
+3. **Setup command failure** - diagnose and fix before proceeding.
 
 ### Env var triage
 
@@ -132,27 +108,26 @@ After resolving auto-generatable and interactively-provisionable vars, if any en
 > **Empty environment variables detected:**
 > - `GOOGLE_CLIENT_ID` (empty)
 > - `GOOGLE_CLIENT_SECRET` (empty)
-> - `STRIPE_SECRET_KEY` (empty)
 >
 > For each, tell me:
-> 1. **Fill it now** — I'll help you provision it
-> 2. **Skip for now** — features depending on this won't be QA-tested (I'll mark related criteria as expected skips)
-> 3. **Not needed** — this var isn't used by the current project
+> 1. **Fill it now** - I'll help you provision it
+> 2. **Skip for now** - features depending on this won't be QA-tested (I'll mark related criteria as expected skips)
+> 3. **Not needed** - this var isn't used by the current project
 
-For vars marked "skip for now", append an `expected-skips` section to the manifest:
-```yaml
+For vars marked "skip for now", append an `expected-skips` section to the manifest config:
+```
 expected-skips:
   - var: GOOGLE_CLIENT_ID
-    features: ["Google OAuth login", "Google profile sync"]
+    features: Google OAuth login, Google profile sync
   - var: STRIPE_SECRET_KEY
-    features: ["Payment processing", "Subscription management"]
+    features: Payment processing, Subscription management
 ```
 
-QA acceptance criteria that depend on these features will be marked `EXPECTED SKIP` — they don't fail the gate. All other criteria must still pass.
+QA acceptance criteria that depend on these features will be marked `EXPECTED SKIP` - they don't fail the gate.
 
 ### Auth provider detection
 
-Only run this if `qa-mode: full` — auth detection only matters for browser smoke tests. If `qa-mode: build-only`, skip entirely.
+Only run this if `qa-mode: full` - auth detection only matters for browser/E2E tests. If `qa-mode: build`, skip entirely.
 
 **Scan for auth providers.** Use Grep/Glob to detect auth setup in the project:
 
@@ -166,28 +141,21 @@ Only run this if `qa-mode: full` — auth detection only matters for browser smo
 | Lucia | `lucia` in package.json |
 | Custom | `bcrypt`/`argon2` in package.json with signup/login route files |
 
-**If no auth detected:** Skip. No frontmatter changes needed.
+**If no auth detected:** Skip. No config changes needed.
 
-**If auth detected, ask the user** via AskUserQuestion:
+**If auth detected, ask the user:**
 
 > **Auth provider detected: {provider}**
 >
 > Browser smoke tests need to log in. Email verification blocks agents (they can't check inboxes).
 >
 > How should test users be created?
-> 1. **Admin API** — set up `qa-setup` to create a pre-confirmed test user via the provider's admin API
-> 2. **Auto-confirm enabled** — email confirmation is disabled in dev, no special handling needed
-> 3. **Pre-verified credentials** — you'll provide a test email/password that already works
-> 4. **Custom** — describe your approach
+> 1. **Admin API** - set up `setup-command` to create a pre-confirmed test user via the provider's admin API
+> 2. **Auto-confirm enabled** - email confirmation is disabled in dev, no special handling needed
+> 3. **Pre-verified credentials** - you'll provide a test email/password that already works
+> 4. **Custom** - describe your approach
 
-**Process the user's choice:**
-
-- **Admin API:** Ask for test email and password. Update `qa-setup` in the manifest to include a script that creates a pre-confirmed user via the provider's admin API (e.g., Supabase: `auth.admin.createUser({ email, password, email_confirm: true })`). Add `auth-strategy: admin-api` and `test-credentials` to the manifest frontmatter.
-- **Auto-confirm:** Ask for test email and password. Add `auth-strategy: auto-confirm` and `test-credentials` to the manifest frontmatter.
-- **Pre-verified:** Ask for the credentials. Add `auth-strategy: pre-verified` and `test-credentials` to the manifest frontmatter.
-- **Custom:** Record the user's description. Add `auth-strategy: custom` and `auth-notes` to the manifest frontmatter. The user is responsible for ensuring `qa-setup` handles it.
-
-Update the manifest file with the new frontmatter fields.
+Process the user's choice and update the manifest config with `auth-strategy` and `test-credentials` (or `auth-notes` for custom).
 
 ### qa-mode validation
 
@@ -195,34 +163,43 @@ If `qa-mode: full` in the manifest, validate prerequisites:
 
 ```
 qa-mode: full requires:
-  ✓ Browser tool (gstack browse, Playwright MCP, or agent-browser) — {detected/MISSING}
-  ✓ Dev server configured — {configured/MISSING}
-  ✓ All non-skipped env vars filled in — {N empty}
+  Browser tool (gstack browse, Playwright MCP, or agent-browser) - {detected/MISSING}
+  Dev server configured - {configured/MISSING}
+  All non-skipped env vars filled in - {N empty}
 
 If any prerequisites are missing, QA gates will FAIL with an infrastructure
 error that no fixer agent can resolve. The entire run will be BLOCKED at the
-first QA gate until you resolve it. No sessions after that gate will execute.
+first functional QA gate until you resolve it.
 ```
 
-If prerequisites are missing, ask the user: proceed with `full` (accepting the risk of blocking) or switch to `build-only`?
+If prerequisites are missing, ask the user: proceed with `full` (accepting the risk of blocking) or switch to `build`?
 
 ### Browser tool selection
 
 Only run this if `qa-mode: full`. Read the preflight results for detected browser tools.
 
-- **`browser-tool` already set in manifest:** Skip — user already chose (e.g., from a previous run or manual edit).
+- **`browser-tool` already set in manifest:** Skip.
 - **0 detected:** Already handled by qa-mode validation (MISSING).
-- **1 detected:** Set `browser-tool: <tool-id>` in the manifest frontmatter automatically. No prompt needed.
-- **>1 detected:** Ask the user via AskUserQuestion which tool QA gates should use. List each detected tool with a brief description:
-  - `gstack-browse` — Fast CLI binary (~100ms/command), persistent daemon, cookie/state persistence
-  - `playwright-mcp` — MCP tool integration, direct LLM tool calls
-  - `agent-browser` — CLI tool, snapshot-based interaction
+- **1 detected:** Set `browser-tool: <tool-id>` in the manifest config automatically.
+- **>1 detected:** Ask the user which tool QA gates should use.
 
-  Store the user's choice as `browser-tool: <tool-id>` in the manifest frontmatter.
+### Test baseline capture
+
+Run the verify command and capture any pre-existing test failures as the baseline:
+
+```bash
+# Run from the project root on the feature branch
+<verify-command> 2>&1 | tail -100 > /tmp/autoboard-<slug>-baseline-output.txt
+echo $? > /tmp/autoboard-<slug>-baseline-exit.txt
+```
+
+If the verify command fails, write the failing test names and error summary to `docs/autoboard/<slug>/test-baseline.md`. This file tells teammates and QA subagents which failures existed before autoboard started, so they don't waste time fixing pre-existing issues.
+
+If the verify command passes, write `No pre-existing test failures.` to `test-baseline.md`.
 
 ### Task overlap cleanup
 
-If resolving any of the above overlaps with a task in the manifest (e.g., T1 was supposed to "provision Convex backend" but you just did it), update the manifest to remove or simplify that task so the session agent doesn't redo the work.
+If resolving any of the above overlaps with a task in the manifest (e.g., T1 was supposed to "provision backend" but you just did it), update the manifest to remove or simplify that task so a teammate doesn't redo the work.
 
 ---
 
@@ -231,15 +208,20 @@ If resolving any of the above overlaps with a task in the manifest (e.g., T1 was
 Report the execution plan to the user:
 ```
 Execution Plan:
-  Layer 0: S1, S2, S3 (parallel)
-  QA Gate: Foundation validation
-  Layer 1: S4, S5 (parallel, depend on Layer 0)
-  QA Gate: Integration validation
-  Layer 2: S6 (depends on Layer 1)
-  Final QA
+  Layer 1: T1, T2, T3, T4 (4 tasks, parallel)
+    Batch 1: T1, T2, T3 (3 tasks)
+    Batch 2: T4 (1 task)
+  QA Gate: After Layer 1 (build-only)
+  Layer 2: T5, T6 (2 tasks, parallel)
+  QA Gate: After Layer 2 (functional)
+  Layer 3: T7 (1 task)
+  Final QA (functional)
 
-  Total: 6 sessions, 3 layers, 2 QA gates
-  Model: opus | QA: sonnet | Explore: haiku | Plan Review: sonnet | Code Review: sonnet
+  Total: 7 tasks, 3 layers, 2 mid-layer QA gates
+  Models: Planning=opus | Teammates=sonnet (opus for complexity 5+)
+  Max batch size: 5
 ```
 
-Setup is complete. You now have the parsed manifest, layer graph, and config. Continue executing `/autoboard:run` — your next step is Step 2 (Load Tracking Provider). Do not stop, do not "return to orchestrator" — you are the orchestrator.
+Show batches only for layers that exceed `max-batch-size`. Show "(build-only)" or "(functional)" based on whether the QA gate has `functional: true`.
+
+Setup is complete. You now have the parsed manifest, dependency layers, batch assignments, and config. Continue executing `/autoboard:run` - your next step is Step 2 (layer execution). Do not stop, do not "return to lead" - you are the lead.
