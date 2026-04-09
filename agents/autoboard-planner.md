@@ -1,9 +1,8 @@
 ---
 name: autoboard-planner
 description: Explores the codebase and writes implementation plans for a batch of tasks. The only agent that needs broad codebase understanding.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 model: opus
-permissionMode: plan
 ---
 
 # Planning Subagent
