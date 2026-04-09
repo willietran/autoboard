@@ -111,7 +111,7 @@ fixer's items if you can avoid it.
 
 ## QA Findings
 
-QA report: {absolute path to docs/autoboard/{slug}/sessions/qa-L{N}.md}
+QA report: {absolute path to docs/autoboard/{slug}/sessions/qa-L{N}-latest.md}
 You MUST read this file with the Read tool for the full QA-REPORT before starting any fixes.
 
 {For rounds > 0, also include:}

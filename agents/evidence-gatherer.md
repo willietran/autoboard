@@ -2,7 +2,7 @@
 name: evidence-gatherer
 description: Reads failure evidence sources (teammate output, git log, knowledge file) and returns a compressed structured summary for lead classification.
 tools: ["Read", "Grep", "Glob", "Bash"]
-permissionMode: plan
+model: sonnet
 ---
 
 # Evidence Gatherer
@@ -16,6 +16,7 @@ Your prompt includes:
 - Git branch name (e.g., `autoboard/{slug}-t{N}`)
 - Worktree path (e.g., `/tmp/autoboard-{slug}-t{N}`)
 - Knowledge file path (e.g., `/tmp/autoboard-{slug}-t{N}-knowledge.md`)
+- Verify command (e.g., `npm run lint && npm run typecheck && npm run build && npm run test`)
 
 ## Evidence Sources
 

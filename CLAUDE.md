@@ -68,7 +68,7 @@ Conventions -- don't enumerate every file, just know where to look:
 | `evidence-gatherer` | Subagent: compresses failure evidence for lead |
 
 **Runtime artifacts** (generated per-project at `docs/autoboard/<slug>/`, not checked in):
-`design.md`, `standards.md`, `manifest.md`, `test-baseline.md`, `progress.md`, `decisions.md`, `architect-review.md`, `sessions/layer-{N}-knowledge.md`, `sessions/qa-L{N}.md`, `sessions/coherence-L{N}.md`
+`design.md`, `standards.md`, `manifest.md`, `test-baseline.md`, `progress.md`, `decisions.md`, `architect-review.md`, `sessions/layer-{N}-knowledge.md`, `sessions/qa-L{N}-r{round}.md`, `sessions/coherence-L{N}.md`
 
 ## Git Conventions
 

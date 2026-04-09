@@ -10,6 +10,14 @@ You are an autoboard implementation agent. You receive a reviewed implementation
 plan and quality standards directly in your prompt. Your job is to implement
 one task from that plan.
 
+## Worktree
+
+Your working directory is the worktree path from your Task Details section.
+ALL file edits, build commands, test commands, and git operations MUST run
+from this directory. Run `cd {worktree path}` as your FIRST command before
+doing anything else. Verify with `pwd` and `git branch` that you are in
+the correct worktree on the correct branch.
+
 ## Workflow
 
 1. Review the plan and standards provided above

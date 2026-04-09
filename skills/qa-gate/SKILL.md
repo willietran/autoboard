@@ -220,7 +220,7 @@ Dispatch the `qa-validator` agent via the Agent tool with model `qa-model` and t
 
 - QA-REPORT text (the full `~~~QA-REPORT` block)
 - Expected skips (from manifest's `expected-skips` list)
-- Prior QA-REPORTs (from earlier runs at this same gate, if any - read from prior output)
+- Prior QA-REPORTs (read from `docs/autoboard/{slug}/sessions/qa-L{N}-r{0..round-1}.md` if they exist)
 - Manifest task list with dependencies and layer assignments
 - Current layer number
 
