@@ -1,49 +1,43 @@
 ---
 name: knowledge
-description: Curate cross-session knowledge between layers — deduplicate, filter by relevance, resolve conflicts, and brief next-layer sessions
+description: Curate cross-task knowledge between layers - dispatch the knowledge-curator agent, then clean up per-task files
 ---
 
 # Curate Knowledge for Next Layer
 
-Synthesize what this layer built and brief the next layer with what they need to know. Do NOT pass session status files through verbatim — you are the engineering lead, curate what your reports need to know.
+After each layer completes (all quality gates passed), dispatch the knowledge curator to synthesize per-task discoveries into a single layer knowledge file.
 
-**Prerequisites:** All merges and the coherence audit for this layer have completed. You must have run the coherence audit. If the audit found no issues, that is fine — proceed with knowledge curation using session status files. If the audit found issues, incorporate them into the knowledge brief (what was fixed, what patterns to avoid).
+**Prerequisites:** All merges, code review, cohesion audit, and QA for this layer have completed.
+
+---
+
+## Gather Task Knowledge File Paths
+
+Glob for `/tmp/autoboard-{slug}-t*-knowledge.md` to find all per-task knowledge files from this layer's tasks. Each teammate writes one of these before completing their task.
+
+If no per-task knowledge files exist for this layer, skip curation entirely.
 
 ---
 
 ## Dispatch Knowledge Curator
 
-Dispatch the `autoboard:knowledge-curator` agent via the Agent tool with model `explore-model` and these inputs:
+Dispatch the `knowledge-curator` agent via the Agent tool with these inputs:
 
-- Session status file paths: `docs/autoboard/{slug}/sessions/s{N}-status.md` for each completed session in this layer
-- Prior layer knowledge path: `docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md` (or note "first layer" if Layer 0)
-- Manifest path: `docs/autoboard/{slug}/manifest.md`
-- Design doc path: `docs/autoboard/{slug}/design.md`
-- Output file path: `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`
-- Decisions file path: `docs/autoboard/{slug}/decisions.md`
+- **Slug and layer number**
+- **Per-task knowledge file paths** from the glob above
+- **Prior layer knowledge path:** `docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md` (or note "first layer" if Layer 1)
+- **Output file path:** `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`
 
-The agent reads all session status files and prior knowledge, synthesizes with deduplication, conflict detection, and resolution, then writes the curated knowledge file and appends to the decisions log.
-
-It returns: `conflict_summary_with_resolutions` for your review.
+The curator reads all per-task files and prior knowledge, deduplicates, filters for relevance, resolves conflicts, and writes a self-contained layer knowledge file. Max 10 entries. Only things not obvious from reading the code: utilities created or found, gotchas, surprising constraints.
 
 ---
 
-## Validate Curator Output
+## Clean Up Per-Task Files
 
-Review the `conflict_summary_with_resolutions`. For each conflict resolution:
-- Does the chosen pattern align with the design doc?
-- Does the resolution correctly identify which session's pattern to follow?
-- Are there conflicts the curator missed that you noticed during the run?
-
-If any resolution is wrong, correct it by editing the relevant section in the knowledge file at `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`. You have context the curator lacked (design doc intent, escalation outcomes, manifest-wide dependency knowledge).
-
-Verify the knowledge file exists at `docs/autoboard/{slug}/sessions/layer-{N}-knowledge.md`.
+After the curator writes the layer knowledge file, delete all per-task knowledge files from this layer's tasks (`/tmp/autoboard-{slug}-t*-knowledge.md` for the relevant task IDs). These are consumed -- the layer file is the canonical record.
 
 ---
 
-## What This Enables
+## How Knowledge Gets Consumed
 
-The spawn script injects `layer-{N}-knowledge.md` into each next-layer session's prompt via the `--knowledge` flag. This means next-layer sessions start with:
-- Awareness of what was built (without reading all prior code)
-- Clear conventions to follow (no conflicting patterns)
-- Knowledge of shared utilities they should use (no reinvention)
+The planning subagent for the next layer gets `@layer-{N}-knowledge.md` in its prompt. Teammates get knowledge indirectly through the plan. The lead holds only a one-line summary, not the full file.
