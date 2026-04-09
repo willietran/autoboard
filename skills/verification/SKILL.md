@@ -277,7 +277,7 @@ If the manifest config includes a `setup-command` field (or `setup` for backward
 
 ### Step 4: Capture Test Baseline
 
-If the manifest includes a `verify-command` (or `verify` for backward compatibility), run it now and record which tests fail. This baseline lets session verification distinguish pre-existing failures from new regressions.
+If the manifest includes a `verify-command` (or `verify` for backward compatibility), run it now and record which tests fail. This baseline lets verification distinguish pre-existing failures from new regressions.
 
 - Save failing test names/patterns to `docs/autoboard/{slug}/test-baseline.md`
 - If all tests pass, write "All tests pass — clean baseline"
