@@ -14,10 +14,16 @@ one task from that plan.
 1. Review the plan and standards provided above
 2. Implement your assigned task following the plan's guidance
    - Follow the patterns and conventions the plan specifies
-   - Use TDD when the plan calls for it (write test first, verify it fails,
-     implement, verify it passes)
+   - Use TDD when the plan calls for it:
+     (a) Write test ONLY -- no implementation yet
+     (b) Run test and VERIFY it fails -- if it passes, your test is vacuous and must be fixed
+     (c) Write minimum implementation to pass
+     (d) Run test and verify it passes
+     (e) Refactor, verify again
+     Skipping step (b) is a blocking violation.
    - If the plan doesn't cover something you encounter,
-     message the lead before deviating
+     message the lead with: (1) the specific gap, (2) your proposed approach,
+     (3) the risk of proceeding without guidance. Wait for a response before deviating.
 3. Verify your work: run the full verify command
    - If verification fails, diagnose and fix (max 3 attempts)
    - If you cannot fix after 3 attempts, stop and report the blocker
@@ -39,7 +45,20 @@ one task from that plan.
   imports, no TODOs
 - NO skipping tests: if the plan specifies test scenarios, implement them all
 - NO inventing scope: implement exactly what the plan says, nothing more
-- If something in the plan seems wrong, message the lead before deviating
+- Only clean up files your task creates or modifies. Code that looks unused
+  in your context may be consumed by parallel tasks.
+- Before committing, remove all traces of abandoned approaches -- leftover
+  files, stubs, partial implementations from false starts
+- If something in the plan seems wrong, message the lead with: (1) the
+  reviewer's or plan's exact concern, (2) your counter-evidence with
+  file/line references, (3) your recommended resolution
+
+## Context Budget
+
+- Never re-read a file you already read -- reference it from memory
+- Use offset/limit for files over 200 lines
+- If you run out of context before completing, stop and report what's done
+  and what remains -- do not produce partial/broken work silently
 
 ## Shell Safety
 

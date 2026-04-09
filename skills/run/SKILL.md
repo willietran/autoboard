@@ -393,9 +393,43 @@ When a teammate or subagent fails, classify before acting:
 | **Permission denial** | Do NOT retry (same denial will happen). Report the denied command, suggest adding to permissions. |
 | **Review escalation** | Do NOT count against retry budget. Lead arbitrates: read both sides, cross-reference design doc, make a call. |
 | **Dependency cascade** | Mark downstream tasks as blocked. Do not attempt until upstream succeeds. |
-| **Code/task failure** | Dispatch `evidence-gatherer` subagent to read failure output (keeps evidence out of lead context), then spawn fixer teammate with diagnosis. |
+| **Code/task failure** | Dispatch `evidence-gatherer` subagent to read failure output (keeps evidence out of lead context), then select retry strategy based on diagnosis. |
 
-The evidence-gatherer subagent reads teammate output and returns a compressed summary - the lead never reads raw failure output directly.
+The evidence-gatherer subagent reads teammate output and returns a compressed summary -- the lead never reads raw failure output directly.
+
+### Retry Strategies
+
+Based on the evidence-gatherer's preliminary classification, select a strategy:
+
+| Classification | Strategy |
+|---|---|
+| **stuck** | New fixer teammate with diagnosis and adjusted approach |
+| **misunderstood** | Re-brief with design doc quotes clarifying the requirement |
+| **too_big** | Split task into subtasks, create new tasks in the shared task list |
+| **permission_denial** | Do NOT retry. Report to user. |
+| **unknown** | One retry with diagnosis, then escalate |
+
+**Every retry must be meaningfully different.** If you cannot articulate what changed in the approach and why it should succeed, escalate to the user instead of retrying. Blind retries waste budget and time.
+
+### Escalation to User
+
+When retries are exhausted or the lead cannot resolve a failure, escalate with this structure:
+
+```
+## Escalation: T{N} -- {task title}
+
+**Failed at:** {phase where failure occurred}
+**Work completed:** {what was committed/built before failure}
+**Diagnosis:** {evidence-gatherer summary}
+**Attempts made:** {what was tried and why it didn't work}
+**Worktree preserved at:** /tmp/autoboard-{slug}-t{N}
+
+**Options:**
+1. Retry with different instructions (describe what to change)
+2. Investigate the worktree manually
+3. Skip this task and continue (downstream tasks may fail)
+4. Split into smaller subtasks
+```
 
 ---
 
