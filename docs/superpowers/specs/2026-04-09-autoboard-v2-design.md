@@ -189,7 +189,7 @@ The `autoboard-implementer` subagent definition enforces quality without microma
 ---
 name: autoboard-implementer
 description: Implements a single task from a reviewed plan. Use for autoboard task execution.
-tools: Read, Edit, Write, Glob, Grep, Bash, Agent, Skill, NotebookEdit, LSP, WebFetch, WebSearch, ToolSearch
+tools: Read, Edit, Write, Glob, Grep, Bash, Skill, NotebookEdit, LSP, WebFetch, WebSearch, ToolSearch
 model: sonnet
 ---
 
@@ -485,7 +485,9 @@ After the curator writes the layer knowledge file, per-task knowledge files (`/t
 
 | Component | Purpose |
 |---|---|
-| `agents/autoboard-implementer.md` | Teammate subagent definition |
+| `agents/autoboard-implementer.md` | Teammate subagent definition (sonnet, default) |
+| `agents/autoboard-implementer-opus.md` | Teammate subagent definition (opus, effort high, complexity 5) |
+| `agents/autoboard-implementer-opus-max.md` | Teammate subagent definition (opus, effort max, complexity 8) |
 | `agents/autoboard-planner.md` | Planning subagent definition |
 | `agents/knowledge-curator.md` | Curates cross-layer knowledge |
 | `agents/qa-validator.md` | Classifies QA failures (genuine/fabrication/premature) |
@@ -556,10 +558,10 @@ For `qa-mode: full`, the setup step must:
 
 Without this, functional QA subagents can't log in or interact with authenticated pages.
 
-### Agent Teams Uncertainties
+### Agent Teams Constraints
 
-These assumptions need verification during implementation:
-1. **Worktree isolation for teammates** -- whether `isolation: worktree` in the subagent definition carries over when used as a teammate type. If not, the lead must create worktrees manually (via Bash) and pass the path to teammates.
-2. **Model/effort override per teammate** -- the docs don't show a structured API for this. May need multiple subagent definitions (e.g., `autoboard-implementer-opus-high`, `autoboard-implementer-sonnet`) or rely on natural language at spawn time.
-3. **Subagent spawning from teammates** -- teammates are full Claude Code sessions and likely can use the Agent tool, but this is unconfirmed. If not, teammates cannot dispatch Explore subagents, which is fine since they get context from the plan.
+Known constraints confirmed through research:
+1. **Teammates cannot spawn subagents.** No Agent tool access. Teammates are pure executors -- all exploration, planning, reviewing, and auditing happens at the lead level via subagents. This is by design in v2.
+2. **Worktree isolation for teammates** -- whether `isolation: worktree` in the subagent definition carries over when used as a teammate type needs verification. If not, the lead must create worktrees manually (via Bash) and pass the path to teammates.
+3. **Model/effort per teammate** -- natural language override at spawn time is unreliable. Use separate subagent definitions: `autoboard-implementer` (sonnet, default), `autoboard-implementer-opus` (opus, effort high), `autoboard-implementer-opus-max` (opus, effort max). The lead selects the definition based on task complexity.
 4. **TaskCompleted hook environment** -- the hook receives JSON via stdin (task_id, task_subject, etc.) but the exact mechanism for knowing the worktree path and verify command needs to be determined.
