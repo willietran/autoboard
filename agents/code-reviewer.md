@@ -66,4 +66,4 @@ If you find zero issues, say so and APPROVE — do not invent concerns to justif
 
 - **Read-only review.** Do not create files, scaffold projects, install packages, or run build/test commands. Review by reading the submitted diff and existing codebase files only.
 - **No Bash narrative.** Formulate your analysis before making tool calls. Each tool call should read a specific file or check a specific fact.
-- **Max 3 review rounds.** If the review has not converged after 3 rounds, note unresolved items and provide a final verdict.
+- **Default max 3 review rounds**, unless dispatched with a round-cap directive. If the session dispatches you with a "single-round review" directive, you have ONE round. Focus exclusively on BLOCKING issues - things that would cause runtime failures, test failures, or security vulnerabilities. No NITs, no suggestions. APPROVE or return only critical blocking issues. If the review has not converged after the maximum rounds, note unresolved items and provide a final verdict.

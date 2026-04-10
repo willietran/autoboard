@@ -86,6 +86,51 @@ Project directory: docs/autoboard/{slug}/
 Worktree path: /tmp/autoboard-{slug}-s{N}
 Progress directory: /tmp/autoboard-{slug}-progress/
 
+## Workflow Tier: {tier from sessions table}
+
+{Include the matching block below. Only include ONE block per brief.}
+
+--- If tier is light ---
+Explore: Subagents unrestricted (haiku, separate context). After exploration, read only files in your creates/modifies lists and files Explore agents specifically recommend. Skip files already covered in your Knowledge section.
+Plan: Inline plan in your progress file. Max 15 lines.
+Plan Review: SKIP. Proceed directly to implementation.
+Code Review: SKIP. Run the Self-Review Checklist below before committing.
+--- End light ---
+
+--- If tier is standard ---
+Plan Review: 1 round max. Dispatch with directive: "Single-round review. APPROVE or return BLOCKING issues only. No NITs, no suggestions."
+Code Review: 1 round max. Same single-round directive.
+--- End standard ---
+
+--- If tier is thorough ---
+Full workflow. All phases run with full rigor, up to 3 review rounds each.
+--- End thorough ---
+
+## Context Discipline (BLOCKING)
+
+Violating these rules will exhaust your context window and prevent task completion. The orchestrator considers context exhaustion a session failure. These are not suggestions.
+
+1. NEVER re-read the manifest. Your tasks are in this brief.
+2. Max 2 reads per file: initial read + post-edit verification.
+3. NEVER read a file you just wrote. You know what's in it.
+4. During TDD RED/GREEN: run ONLY the specific test file, not the full suite. Full suite runs only in REFACTOR verification and Phase 5.
+5. Use Edit, not Write, for all modifications to existing files.
+6. NEVER re-Write a file. Use Edit for subsequent changes.
+
+{Include the self-review checklist below ONLY for light tier. Omit for standard and thorough.}
+
+## Self-Review Checklist (replaces Code Review for light tier)
+
+Before committing, run `git diff {feature-branch}...HEAD` and verify each item below. For each item, cite the specific file:line that confirms compliance. If you cannot cite evidence, the item FAILS - fix it before committing.
+
+1. No dead code, unused imports, or debug artifacts
+2. Error paths handled, not just happy path
+3. Tests cover ALL key test scenarios from task records
+4. Naming follows existing codebase conventions
+5. No files modified outside your task scope
+6. Quality standards satisfied (check your brief's standards section)
+7. All tests pass (run full verify command, paste result)
+
 ## Tasks
 
 {Copy each task's full record from the manifest: title, creates, modifies, depends on, requirements, explore targets, TDD phase, test approach, key test scenarios, complexity, commit message}

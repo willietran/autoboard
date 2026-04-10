@@ -61,32 +61,28 @@ If your session brief indicates this is a retry (prior attempt failed):
 
 ---
 
-## Iron Rule
+## Workflow Discipline
 
-Never skip a phase. Never start implementation before exploration. Never skip review.
-Run every command; do not assume results. If a thought starts with "I already know..."
-or "This is simple enough to skip..." - that thought is wrong.
+Follow your assigned Workflow Tier from your session brief. Your tier was set by the orchestrator with full manifest context.
 
-## File Read Discipline
+- **thorough**: Execute every phase with full rigor. Up to 3 review rounds per gate.
+- **standard**: Execute every phase, but with compressed reviews (1 round max, blocking issues only).
+- **light**: Skip Plan Review. Replace Code Review with Self-Review Checklist from your brief. All other phases run.
 
-Large files consume context permanently. Every read adds its full content to your window.
+Never upgrade your tier at runtime. If you think a task needs more review than your tier allows, note it in your status file and continue. The orchestrator handles tier assignments.
 
-1. Never re-read a file you already read in this session. Reference your memory of the previous read. If you need a specific section, use offset and limit parameters.
-2. For files >200 lines: read only the relevant section using offset and limit. Do not read the entire file.
-3. Before reading a file, ask: "Have I already read this?" If yes, do not read it again.
-4. When passing context to reviewers: include relevant excerpts in your prompt rather than instructing reviewers to re-read the same files. Exception: for standards files, pass the file path instead of pasting content (see Quality Standards section).
-5. Exception: re-read a file after you modified it, to verify your changes.
+Run every command; do not assume results. Context discipline rules from your brief are BLOCKING - follow them exactly.
 
 ## Escalation Template
 
-When a review gate exhausts 3 rounds with unresolved BLOCKING issues, write your session status file using this template:
+When a review gate exhausts its maximum rounds (1 for standard tier, 3 for thorough tier) with unresolved BLOCKING issues, write your session status file using this template:
 
 ```markdown
 # Session S{N}: {focus}
 
 **Status:** escalation
 **Phase:** {Plan Review | Code Review}
-**Review rounds completed:** 3
+**Review rounds completed:** {rounds completed}
 **Tasks completed:** {none | list of committed tasks}
 
 ## Escalation
@@ -126,6 +122,11 @@ Exploration happens in two steps. Use Claude Code's built-in Explore subagent fo
 
 No implementation before understanding.
 
+**Post-explore checkpoint:** Before proceeding to Phase 2, verify:
+- You have not re-read any file you already read
+- You have not read the manifest (your tasks are in the brief)
+- You read only files your Explore agents recommended or that are in your creates/modifies lists
+
 | Thought that means STOP | Reality |
 |---|---|
 | "I already know this codebase" | You have fresh context. Explore to ground your understanding in what actually exists. |
@@ -149,18 +150,25 @@ The plan must include:
 
 ## Phase 3: Plan Review (BLOCKING GATE)
 
+**Tier check:**
+- **light**: SKIP this phase. Proceed directly to Phase 4.
+- **standard**: 1 review round max. Follow the instructions below with the single-round directive.
+- **thorough**: Up to 3 review rounds. Follow the instructions below.
+
 **Update progress file:** Write `Phase: Plan Review` to your progress file.
 **Tracking:** If tracking is active, post a comment that plan review is starting (keep ticket on "Planning").
 
-**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this — the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below — do not stop here.
+**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below - do not stop here.
 
 Dispatch the `autoboard:plan-reviewer` agent via the Agent tool with the `plan-review-model` from your session brief's Configuration section (default: sonnet). Tell it the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`), the manifest path (`docs/autoboard/{slug}/manifest.md`), your task IDs, and the standards file path. Include in your prompt: "You MUST read the plan file and manifest with the Read tool before beginning your review." Do NOT paste the plan or task context into the Agent prompt.
 
-Max 3 review rounds. Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree.
+**For standard tier**, add to your dispatch prompt: "Single-round review. APPROVE or return BLOCKING issues only. No NITs, no suggestions."
+
+Max review rounds per your tier (standard: 1, thorough: 3). Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree.
 
 **Do NOT proceed to implementation with unresolved BLOCKING issues.**
 
-**If 3 rounds complete with unresolved BLOCKING issues:** Write the Escalation Template (above) with Phase set to "Plan Review" and exit.
+**If max rounds complete with unresolved BLOCKING issues:** Write the Escalation Template (above) with Phase set to "Plan Review" and exit.
 
 After review approval, update the plan file with any accepted changes. The file is already at the correct location from Phase 2.
 
@@ -183,6 +191,8 @@ For tasks marked TDD (non-Exempt), follow the strict cycle:
 6. **Verify REFACTOR**: Run the test suite again. Confirm nothing broke.
 
 **Skipping RED verification or writing implementation before tests is a BLOCKING violation.**
+
+**Test discipline:** During RED and GREEN steps, run ONLY the specific test file (`npm test -- path/to/file.test.ts` or equivalent), not the full suite. Run the full suite only in REFACTOR verification and Phase 5. Do NOT re-read test files you just wrote.
 
 ### Non-TDD Tasks
 
@@ -213,16 +223,23 @@ Invoke `/autoboard:verification-light` via the Skill tool to load the verificati
 
 ## Phase 6: Code Review (BLOCKING GATE)
 
+**Tier check:**
+- **light**: Write `Phase: Self-Review` to your progress file. Run the Self-Review Checklist from your session brief instead of dispatching a code reviewer. For each checklist item, cite the specific file:line that confirms compliance. If you cannot cite evidence, the item FAILS - fix it before committing. After self-review passes, proceed to Phase 7.
+- **standard**: 1 review round max. Follow the instructions below with the single-round directive.
+- **thorough**: Up to 3 review rounds. Follow the instructions below.
+
 **Update progress file:** Write `Phase: Code Review` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Code Review" and post a phase comment.
 
-**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this — the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below — do not stop here.
+**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below - do not stop here.
 
 Dispatch the `autoboard:code-reviewer` agent via the Agent tool with the `code-review-model` from your session brief's Configuration section (default: sonnet). Tell it the feature branch name so it can run `git diff` itself, and tell it the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`). Pass the standards file path. Include in your prompt: "You MUST read the plan file with the Read tool before beginning your review." Do NOT paste the diff or plan into the Agent prompt.
 
-Max 3 review rounds. Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree. After implementing fixes, re-run verification (Phase 5) before resubmitting to the reviewer.
+**For standard tier**, add to your dispatch prompt: "Single-round review. APPROVE or return BLOCKING issues only. No NITs, no suggestions."
 
-**If 3 rounds complete with unresolved BLOCKING issues:** Write the Escalation Template (above) with Phase set to "Code Review" and exit.
+Max review rounds per your tier (standard: 1, thorough: 3). Push back on incorrect suggestions with specific proven-harm reasoning per the receiving-review decision tree. After implementing fixes, re-run verification (Phase 5) before resubmitting to the reviewer.
+
+**If max rounds complete with unresolved BLOCKING issues:** Write the Escalation Template (above) with Phase set to "Code Review" and exit.
 
 ## Phase 7: Commit
 
