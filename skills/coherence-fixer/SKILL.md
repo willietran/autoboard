@@ -1,6 +1,6 @@
 ---
 name: coherence-fixer
-description: Dispatch fixer session agents for coherence issues that survived pre-screening. Groups by dimension, spawns parallel fixers, manages round-based retry loop. Re-invoke at the start of each new layer.
+description: Dispatch fixer session agents for coherence issues that survived pre-screening. Groups by dimension, spawns sequential fixers, manages round-based retry loop. Re-invoke at the start of each new layer.
 ---
 
 # Coherence Fixer
@@ -9,7 +9,7 @@ Dispatch full session agents to fix coherence issues that survived orchestrator 
 
 **Prerequisites:** A COHERENCE-REPORT with findings that survived orchestrator pre-screening (BLOCKING, INFO, or both). If tracking is active, the coherence-audit skill has already created an on-demand issue -- use its issue number and item ID.
 
-**Ownership model:** This skill owns the entire retry loop. The orchestrator invokes it once. It manages grouping, parallel dispatch, merging, audit re-runs, and retry logic internally. It returns only when the audit is clean or the round limit is exhausted.
+**Ownership model:** This skill owns the entire retry loop. The orchestrator invokes it once. It manages grouping, sequential dispatch, merging, audit re-runs, and retry logic internally. It returns only when the audit is clean or the round limit is exhausted.
 
 ---
 
@@ -28,7 +28,6 @@ Parse the COHERENCE-REPORT and group findings by their source dimension.
   - Runtime: `performance`, `observability`, `data-modeling`
 - **Never combine across conceptual groups.** Security findings and test-quality findings go to separate fixers.
 - **If total findings <= 5 from a single dimension:** Dispatch a single fixer (no fragmentation).
-- Respect `max-parallel` concurrency limit from the manifest.
 
 For single-fixer dispatch, use group `g1`.
 
@@ -38,24 +37,24 @@ For single-fixer dispatch, use group `g1`.
 
 For each round (starting at Round 0):
 
-### 2a. Save Round Checkpoint
+### 2a. Sequential Fixer Loop
 
-```bash
-ROUND_CHECKPOINT=$(git rev-parse HEAD)
-```
+Process groups **one at a time**. Each fixer branches from the current feature branch HEAD (which includes all prior fixers' merges from this round).
 
-### 2b. Create Worktrees
+For each group in this round:
 
-Create worktrees **sequentially** (avoids git lock contention). All branch from feature branch HEAD at this point:
+#### i. Create Worktree
+
+Branch from feature branch HEAD **at this point** (not the round checkpoint -- HEAD advances as prior fixers merge):
 
 ```bash
 git worktree add /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} -b autoboard/{slug}-coherence-fix-L{N}-r{round}-g{group} autoboard/{slug}
 for f in .env*; do [ -f "$f" ] && ln -sf "$(pwd)/$f" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}/"$f"; done
 ```
 
-### 2c. Write Briefs
+#### ii. Write Brief
 
-Write each fixer's brief to `/tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md`. The brief uses the **same template as today** -- all existing sections preserved. Two sections are added: "Your Assignment" (after Session Brief) and "Prior Round Summary" (for rounds > 0).
+Write the fixer's brief to `/tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md`:
 
 ```
 You are a autoboard session agent.
@@ -77,17 +76,20 @@ Progress directory: /tmp/autoboard-{slug}-progress/
 
 ## Your Assignment
 
-You are fixer {G} of {N} parallel fixers for round {round}.
+You are fixer {G} of {N} sequential fixers for round {round}.
 Your dimension(s): {dimension name(s)}
 Fix ONLY these items:
 
 {list of assigned findings with their dimension, severity, description, file locations, and evidence}
 
-Read the full COHERENCE-REPORT from the file path in the Coherence Findings section below. Other fixers are handling:
-{for each other fixer: "- Fixer {K}: {dimension(s)} -- {brief summary of findings}"}
+Read the full COHERENCE-REPORT from the file path in the Coherence Findings section below.
+{if G > 1: "Prior fixers already merged:"}
+{for each prior fixer (1..G-1): "- Fixer {K}: {dimension(s)} -- {brief summary of findings} (MERGED)"}
+{if G < N: "Remaining fixers after you:"}
+{for each later fixer (G+1..N): "- Fixer {K}: {dimension(s)} -- {brief summary of findings}"}
 
-Understanding what others are fixing helps you avoid conflicting changes.
-If your fix would also resolve items assigned to another fixer, that is fine --
+Prior fixers' changes are already in your worktree (you branched from post-merge HEAD).
+If your fix would also resolve items assigned to a remaining fixer, that is fine --
 the audit re-run will detect it. Do NOT modify files solely for another
 fixer's items if you can avoid it.
 
@@ -103,9 +105,8 @@ You MUST read this file with the Read tool for the full COHERENCE-REPORT before 
 ## Prior Round Summary
 
 Round {R-1} resolved: {items}. Still failing: {items}.
-{If carry-over from merge conflict:} Your items were carried over because the
-prior fixer's merge conflicted. Changes merged by other fixers since then:
-{diff summary from git diff ROUND_CHECKPOINT..HEAD}
+{If carry-over from verification failure:} Your items were carried over because
+the prior round's fixer broke verification after merge (rolled back).
 
 ## Reference Files
 
@@ -152,9 +153,9 @@ The fixer is a full session agent and will move through Exploring -> Planning ->
 
 If tracking is disabled, omit the Tracking section entirely.
 
-### 2d. Spawn Fixers
+#### iii. Spawn Fixer
 
-Spawn all fixers in this round as **parallel background Bash commands**:
+Spawn this fixer as a **background Bash command**:
 
 ```bash
 "$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
@@ -171,46 +172,40 @@ Spawn all fixers in this round as **parallel background Bash commands**:
 
 If `skip-permissions: true` in manifest, use `--skip-permissions` instead of `--settings`.
 
-Run each with Bash `run_in_background: true`. Spawn at most `max-parallel` fixers concurrently. If more groups exist than `max-parallel`, use the same sliding window as session-spawn (spawn next when one completes).
+Run with Bash `run_in_background: true`.
 
-### 2e. Wait for Completion
+#### iv. Wait for Completion
 
 Background Bash commands notify automatically when they complete. Do NOT poll or sleep.
 
-### 2f. Merge Fixers
+#### v. Merge and Verify
 
-**Pause future layers** until all fixers complete and the re-audit passes.
+1. **Read session status file** from `docs/autoboard/{slug}/sessions/` in the fixer worktree
+2. **Merge this fixer** to the feature branch (squash merge -- see merge skill). Commit message: `Coherence Fix L{N} r{round} g{group}: {dimension(s)}`
+3. **Verify after merge:**
+   ```bash
+   {verify command from frontmatter}
+   ```
+   - If verification **passes**: continue to next group.
+   - If verification **fails**: roll back this fixer's merge (`git reset --hard HEAD~1`), carry over this fixer's items to the next round. Log: "Fixer g{group} broke verification. Rolled back. Carrying over items to round {round+1}." Continue to next group.
+4. **Tracking (if active):** `post-comment(coherence-issue, "Fixer g{group} merged ({dimension(s)}). {remaining} groups left in round {round}.")`
 
-After all fixers in the round complete:
+### 2b. Post-Round Status
 
-1. **Read session status files** from `docs/autoboard/{slug}/sessions/` in each fixer worktree
-2. **Merge each fixer** to the feature branch sequentially (squash merge -- see merge skill). Commit message: `Coherence Fix L{N} r{round} g{group}: {dimension(s)}`
-3. **If a fixer merge conflicts** with a prior fixer's merge in the same round: abort the merge, skip this fixer, carry over its items to the next round with diff context
-4. **Tracking (if active):** `post-comment(coherence-issue, "Round {round} complete. {M} of {N} fixers merged. {summary}")`
+After all groups in the round are processed:
 
-### 2g. Post-Merge Verification (Circuit Breaker)
+- **Tracking (if active):** `post-comment(coherence-issue, "Round {round} complete. {M} of {N} fixers merged successfully. {summary}")`
 
-After all merges in the round, run the verify command:
+Proceed to audit re-run (Step 2c).
 
-```bash
-{verify command from frontmatter}
-```
-
-If verification **passes**: proceed to audit re-run (Step 2h).
-
-If verification **fails** (merge produced broken code):
-- Roll back to `ROUND_CHECKPOINT`: `git reset --hard $ROUND_CHECKPOINT`
-- Next round dispatches a **single fixer** for all remaining items (circuit breaker -- parallel merges caused conflicts, fall back to serial)
-- Log: "Circuit breaker: post-merge verify failed. Falling back to single fixer for round {round+1}."
-
-### 2h. Re-run Coherence Audit
+### 2c. Re-run Coherence Audit
 
 Re-run the coherence audit with the same checkpoint and same dimensions.
 
-- **No findings survive re-screening:** Audit is clean. Done. Proceed to 2i.
+- **No findings survive re-screening:** Audit is clean. Done. Proceed to 2d.
 - **Findings remain:** Proceed to Step 3 (Retry Logic).
 
-### 2i. On Pass
+### 2d. On Pass
 
 **Tracking (if active):**
 - `close-ticket(coherence-issue)`
@@ -238,10 +233,9 @@ Each fixer must explore the codebase and create a fix plan before implementing -
 
 ### Carry-Over Items
 
-When items carry over to the next round (from failures or merge conflicts), the next round's brief includes:
+When items carry over to the next round (from failures or verification rollbacks), the next round's brief includes:
 - The updated COHERENCE-REPORT from the latest audit re-run
 - A "## Prior Round Summary" showing what was resolved and what remains
-- For merge-conflict carry-overs: the diff of what other fixers merged (`git diff $ROUND_CHECKPOINT..HEAD`)
 
 Re-group the remaining items for the next round (Step 1). The grouping may change -- fewer items may mean a single fixer suffices.
 

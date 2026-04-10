@@ -1,6 +1,6 @@
 ---
 name: qa-fixer
-description: Dispatch fixer session agents for QA gate failures. Triages failures, groups into parallel fixers, manages round-based retry loop. Re-invoke at the start of each new layer.
+description: Dispatch fixer session agents for QA gate failures. Triages failures, groups into sequential fixers, manages round-based retry loop. Re-invoke at the start of each new layer.
 ---
 
 # QA Fixer
@@ -9,7 +9,7 @@ Dispatch full session agents to fix genuine code failures identified by the QA g
 
 **Prerequisites:** A QA-REPORT with genuine code failures (not infrastructure failures, not premature criteria). The qa-gate skill has already validated the failures and routed them here.
 
-**Ownership model:** This skill owns the entire retry loop. The orchestrator invokes it once. It manages triage, grouping, parallel dispatch, merging, gate re-runs, and retry logic internally. It returns only when the gate passes or the round limit is exhausted.
+**Ownership model:** This skill owns the entire retry loop. The orchestrator invokes it once. It manages triage, grouping, sequential dispatch, merging, gate re-runs, and retry logic internally. It returns only when the gate passes or the round limit is exhausted.
 
 ---
 
@@ -49,7 +49,6 @@ After Round 0 (or if no build failures), count remaining failed items:
 - **Total > 5:** Group into batches:
   - Acceptance criteria failures: groups of max 5
   - Regression failures: groups of max 5 (separate from acceptance)
-  - Respect `max-parallel` concurrency limit from the manifest
 
 For single-fixer dispatch, use group `g1`.
 
@@ -59,24 +58,24 @@ For single-fixer dispatch, use group `g1`.
 
 For each round (starting at Round 0 for build-first, or Round 1 for browser-only):
 
-### 3a. Save Round Checkpoint
+### 3a. Sequential Fixer Loop
 
-```bash
-ROUND_CHECKPOINT=$(git rev-parse HEAD)
-```
+Process groups **one at a time**. Each fixer branches from the current feature branch HEAD (which includes all prior fixers' merges from this round).
 
-### 3b. Create Worktrees
+For each group in this round:
 
-Create worktrees **sequentially** (avoids git lock contention). All branch from feature branch HEAD at this point:
+#### i. Create Worktree
+
+Branch from feature branch HEAD **at this point** (not the round checkpoint -- HEAD advances as prior fixers merge):
 
 ```bash
 git worktree add /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group} -b autoboard/{slug}-qa-fix-L{N}-r{round}-g{group} autoboard/{slug}
 for f in .env*; do [ -f "$f" ] && ln -sf "$(pwd)/$f" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}/"$f"; done
 ```
 
-### 3c. Write Briefs
+#### ii. Write Brief
 
-Write each fixer's brief to `/tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md`. The brief uses the **same template as today** -- all existing sections preserved. Two sections are added: "Your Assignment" (after Session Brief) and "Prior Round Summary" (for rounds > 0).
+Write the fixer's brief to `/tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md`:
 
 ```
 You are a autoboard session agent.
@@ -98,16 +97,19 @@ Progress directory: /tmp/autoboard-{slug}-progress/
 
 ## Your Assignment
 
-You are fixer {G} of {N} parallel fixers for round {round}.
+You are fixer {G} of {N} sequential fixers for round {round}.
 Fix ONLY these items:
 
 {list of assigned items with their criterion number, text, and evidence from the QA-REPORT}
 
-Read the full QA-REPORT from the file path in the QA Findings section below. Other fixers are handling:
-{for each other fixer: "- Fixer {K}: {brief summary of their assigned items}"}
+Read the full QA-REPORT from the file path in the QA Findings section below.
+{if G > 1: "Prior fixers already merged:"}
+{for each prior fixer (1..G-1): "- Fixer {K}: {brief summary of their assigned items} (MERGED)"}
+{if G < N: "Remaining fixers after you:"}
+{for each later fixer (G+1..N): "- Fixer {K}: {brief summary of their assigned items}"}
 
-Understanding what others are fixing helps you avoid conflicting changes.
-If your fix would also resolve items assigned to another fixer, that is fine --
+Prior fixers' changes are already in your worktree (you branched from post-merge HEAD).
+If your fix would also resolve items assigned to a remaining fixer, that is fine --
 the gate re-run will detect it. Do NOT modify files solely for another
 fixer's items if you can avoid it.
 
@@ -123,9 +125,8 @@ You MUST read this file with the Read tool for the full QA-REPORT before startin
 ## Prior Round Summary
 
 Round {R-1} resolved: {items}. Still failing: {items}.
-{If carry-over from merge conflict:} Your items were carried over because the
-prior fixer's merge conflicted. Changes merged by other fixers since then:
-{diff summary from git diff ROUND_CHECKPOINT..HEAD}
+{If carry-over from verification failure:} Your items were carried over because
+the prior round's fixer broke verification after merge (rolled back).
 
 Expected skips (user-acknowledged -- do NOT try to fix these):
 {paste the expected-skips section from the manifest, or 'none'}
@@ -192,9 +193,9 @@ The fixer is a full session agent and will move through Exploring -> Planning ->
 
 If tracking is disabled, omit the Tracking section entirely.
 
-### 3d. Spawn Fixers
+#### iii. Spawn Fixer
 
-Spawn all fixers in this round as **parallel background Bash commands**:
+Spawn this fixer as a **background Bash command**:
 
 ```bash
 "$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md \
@@ -211,46 +212,40 @@ Spawn all fixers in this round as **parallel background Bash commands**:
 
 If `skip-permissions: true` in manifest, use `--skip-permissions` instead of `--settings`.
 
-Run each with Bash `run_in_background: true`. Spawn at most `max-parallel` fixers concurrently. If more groups exist than `max-parallel`, use the same sliding window as session-spawn (spawn next when one completes).
+Run with Bash `run_in_background: true`.
 
-### 3e. Wait for Completion
+#### iv. Wait for Completion
 
 Background Bash commands notify automatically when they complete. Do NOT poll or sleep.
 
-### 3f. Merge Fixers
+#### v. Merge and Verify
 
-**Pause future layers** until all fixers complete and the re-run QA gate passes.
+1. **Read session status file** from `docs/autoboard/{slug}/sessions/` in the fixer worktree
+2. **Merge this fixer** to the feature branch (squash merge -- see merge skill). Commit message: `QA Fix L{N} r{round} g{group}: {brief description}`
+3. **Verify after merge:**
+   ```bash
+   {verify command from frontmatter}
+   ```
+   - If verification **passes**: continue to next group.
+   - If verification **fails**: roll back this fixer's merge (`git reset --hard HEAD~1`), carry over this fixer's items to the next round. Log: "Fixer g{group} broke verification. Rolled back. Carrying over items to round {round+1}." Continue to next group.
+4. **Tracking (if active):** `post-comment(qa-gate, "Fixer g{group} merged. {remaining} groups left in round {round}.")`
 
-After all fixers in the round complete:
+### 3b. Post-Round Status
 
-1. **Read session status files** from `docs/autoboard/{slug}/sessions/` in each fixer worktree
-2. **Merge each fixer** to the feature branch sequentially (squash merge -- see merge skill). Commit message: `QA Fix L{N} r{round} g{group}: {brief description}`
-3. **If a fixer merge conflicts** with a prior fixer's merge in the same round: abort the merge, skip this fixer, carry over its items to the next round with diff context
-4. **Tracking (if active):** `post-comment(qa-gate, "Round {round} complete. {M} of {N} fixers merged. {summary}")`
+After all groups in the round are processed:
 
-### 3g. Post-Merge Verification (Circuit Breaker)
+- **Tracking (if active):** `post-comment(qa-gate, "Round {round} complete. {M} of {N} fixers merged successfully. {summary}")`
 
-After all merges in the round, run the verify command:
+Proceed to gate re-run (Step 3c).
 
-```bash
-{verify command from frontmatter}
-```
-
-If verification **passes**: proceed to gate re-run (Step 3h).
-
-If verification **fails** (merge produced broken code):
-- Roll back to `ROUND_CHECKPOINT`: `git reset --hard $ROUND_CHECKPOINT`
-- Next round dispatches a **single fixer** for all remaining items (circuit breaker -- parallel merges caused conflicts, fall back to serial)
-- Log: "Circuit breaker: post-merge verify failed. Falling back to single fixer for round {round+1}."
-
-### 3h. Re-run QA Gate
+### 3c. Re-run QA Gate
 
 Re-run the QA gate with the same acceptance criteria -- invoke the qa-gate skill again.
 
-- **All criteria pass:** QA gate is clean. Done. Proceed to 3i.
+- **All criteria pass:** QA gate is clean. Done. Proceed to 3d.
 - **Criteria still fail:** Proceed to Step 4 (Retry Logic).
 
-### 3i. On Pass
+### 3d. On Pass
 
 **Tracking (if active):**
 - `close-ticket(qa-gate)`
@@ -278,10 +273,9 @@ Each fixer must invoke `/autoboard:diagnose` and trace root cause before impleme
 
 ### Carry-Over Items
 
-When items carry over to the next round (from failures or merge conflicts), the next round's brief includes:
+When items carry over to the next round (from failures or verification rollbacks), the next round's brief includes:
 - The updated QA-REPORT from the latest gate re-run
 - A "## Prior Round Summary" showing what was resolved and what remains
-- For merge-conflict carry-overs: the diff of what other fixers merged (`git diff $ROUND_CHECKPOINT..HEAD`)
 
 Re-triage and re-group the remaining items for the next round (Step 2). The grouping may change -- fewer items may mean a single fixer suffices.
 
