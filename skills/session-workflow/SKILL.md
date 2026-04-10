@@ -150,13 +150,14 @@ The plan must include:
 
 ## Phase 3: Plan Review (BLOCKING GATE)
 
-**Tier check:**
-- **light**: SKIP this phase. Proceed directly to Phase 4.
-- **standard**: 1 review round max. Follow the instructions below with the single-round directive.
-- **thorough**: Up to 3 review rounds. Follow the instructions below.
+**Tier check - light**: SKIP this phase entirely. Do NOT update progress or tracking for Plan Review. Proceed directly to Phase 4.
+
+**The rest of Phase 3 applies to standard and thorough tiers only.**
 
 **Update progress file:** Write `Phase: Plan Review` to your progress file.
 **Tracking:** If tracking is active, post a comment that plan review is starting (keep ticket on "Planning").
+
+**Round cap:** standard = 1 round max, thorough = up to 3 rounds.
 
 **MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below - do not stop here.
 
@@ -223,13 +224,14 @@ Invoke `/autoboard:verification-light` via the Skill tool to load the verificati
 
 ## Phase 6: Code Review (BLOCKING GATE)
 
-**Tier check:**
-- **light**: Write `Phase: Self-Review` to your progress file. Run the Self-Review Checklist from your session brief instead of dispatching a code reviewer. For each checklist item, cite the specific file:line that confirms compliance. If you cannot cite evidence, the item FAILS - fix it before committing. After self-review passes, proceed to Phase 7.
-- **standard**: 1 review round max. Follow the instructions below with the single-round directive.
-- **thorough**: Up to 3 review rounds. Follow the instructions below.
+**Tier check - light**: Write `Phase: Self-Review` to your progress file. Run the Self-Review Checklist from your session brief instead of dispatching a code reviewer. For each checklist item, cite the specific file:line that confirms compliance. If you cannot cite evidence, the item FAILS - fix it before committing. After self-review passes, proceed directly to Phase 7. Do NOT continue reading Phase 6 instructions below.
+
+**The rest of Phase 6 applies to standard and thorough tiers only.**
 
 **Update progress file:** Write `Phase: Code Review` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Code Review" and post a phase comment.
+
+**Round cap:** standard = 1 round max, thorough = up to 3 rounds.
 
 **MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below - do not stop here.
 
