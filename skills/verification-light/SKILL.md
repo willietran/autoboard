@@ -25,7 +25,7 @@ Bad: `"Tests should pass now"` / `"I fixed it so it works"`
 
 ## Verification Loop (max 3 attempts)
 
-Run the verify commands from your session brief or manifest config.
+Run the verify commands from your brief or manifest config.
 
 For each attempt:
 
@@ -42,7 +42,7 @@ For each attempt:
 3. If ANY command fails:
    - Read the full error output
    - Diagnose the root cause
-   - **Check the baseline**: if this test failure existed in the baseline (captured by preflight before any sessions ran), note it as pre-existing but do not count it as a session failure
+   - **Check the baseline**: if this test failure existed in the baseline (captured by preflight before any sessions ran), note it as pre-existing but do not count it as a new failure
    - Fix new issues only
    - Increment attempt counter and re-run ALL commands (not just the failing one)
 

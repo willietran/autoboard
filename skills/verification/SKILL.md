@@ -33,7 +33,7 @@ Bad: `"Tests should pass now"` / `"I fixed it so it works"`
 
 ## Light Mode
 
-Default mode. Run the verify commands from your session brief or manifest config.
+Default mode. Run the verify commands from your brief or manifest config.
 
 ### Verification Loop (max 3 attempts)
 
@@ -52,7 +52,7 @@ For each attempt:
 3. If ANY command fails:
    - Read the full error output
    - Diagnose the root cause
-   - **Check the baseline**: if this test failure existed in the baseline (captured by preflight before any sessions ran), note it as pre-existing but do not count it as a session failure
+   - **Check the baseline**: if this test failure existed in the baseline (captured by preflight before any sessions ran), note it as pre-existing but do not count it as a new failure
    - Fix new issues only
    - Increment attempt counter and re-run ALL commands (not just the failing one)
 
@@ -82,7 +82,7 @@ Verification Results:
 
 ## Full Mode
 
-Runs light mode first, then browser-based smoke testing. Typically invoked by a cold-start QA subagent with no prior session context — you discover routes by exploring the rendered page, not from prior knowledge.
+Runs light mode first, then browser-based smoke testing. Typically invoked by a cold-start QA subagent with no prior context — you discover routes by exploring the rendered page, not from prior knowledge.
 
 Check the `qa-mode` from your configuration:
 - **`qa-mode: full`** — browser testing is mandatory. If it can't run, the gate FAILS.
@@ -152,7 +152,7 @@ Read the design doc to understand all features built so far. Test existing featu
 - Check for console errors, broken pages, missing content
 - Report any regressions found
 
-If neither acceptance criteria nor design doc are provided (e.g., session-level verification), fall back to exploratory testing: navigate visible pages, interact with UI elements, check for console errors.
+If neither acceptance criteria nor design doc are provided (e.g., task-level verification), fall back to exploratory testing: navigate visible pages, interact with UI elements, check for console errors.
 
 **Browser tool usage:**
 
@@ -305,7 +305,7 @@ Preflight Results:
   Environment: .env.local exists but has empty variables:
     - NEXT_PUBLIC_CONVEX_URL (empty)
     - CONVEX_DEPLOY_KEY (empty)
-    If these aren't filled in, sessions may not be able to fully build,
+    If these aren't filled in, teammates may not be able to fully build,
     test, or validate against the real backend.
   Setup: FAILED — npx convex dev --once exited 1 (missing CONVEX_DEPLOY_KEY)
   Test baseline: not captured (setup failed)
