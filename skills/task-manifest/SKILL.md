@@ -203,6 +203,25 @@ TDD does not affect effort. TDD adds volume (test files, red-green-refactor cycl
 
 **Session effort** = map the **max individual task complexity** in the session to the table above. This is what gets passed to the `--effort` flag. The session complexity sum (used for sizing caps) is a separate concern - it does not affect effort.
 
+### Workflow Tier Derivation
+
+Workflow tier controls which phases run and how many review rounds are allowed. Derived from complexity, not scored independently. Effort and tier are orthogonal - effort controls reasoning depth, tier controls phase selection.
+
+Evaluate top-to-bottom. First match wins:
+
+| Condition | Tier |
+|-----------|------|
+| Max task complexity >= 5, OR session complexity sum >= 7 | `thorough` |
+| Max task complexity >= 3, OR session complexity sum >= 4 | `standard` |
+| Everything else (max task <= 2, sum <= 3) | `light` |
+
+Manual override: set `workflow-tier: light|standard|thorough` on any session to override auto-derivation when you know the task is simpler or more complex than the complexity score suggests.
+
+**What each tier does:**
+- **light**: Explore subagents unrestricted. Plan is inline (15 lines). Plan review SKIPPED. Code review replaced by self-review with evidence. Fastest, lowest context usage.
+- **standard**: All phases run. Plan review and code review capped at 1 round each, blocking issues only. No NITs.
+- **thorough**: Full workflow. Up to 3 review rounds per gate. Current behavior.
+
 ### Session Grouping
 
 One session = one agent = one worktree = sequential execution. There is no parallelism within a session. Group tasks that benefit from shared exploration context, not tasks that happen to be in the same dependency layer.
@@ -246,17 +265,19 @@ One session = one agent = one worktree = sequential execution. There is no paral
 
 #### Session Table Format
 
-The sessions table must show task complexities (Fibonacci), effort, domain label, and rationale:
+The sessions table must show task complexities (Fibonacci), effort, tier, domain label, and rationale:
 
 ```markdown
-| Session | Tasks | Complexity | Domain | Effort | Rationale |
-|---------|-------|-----------|--------|--------|-----------|
-| S1 | T1 (2), T2 (3) | 5 | Data layer | medium | Sequential chain, shared schema context. Max task = 3 -> medium |
-| S2 | T3 (1) | 1 | Auth | low | Rote endpoint following established patterns |
-| S3 | T4 (5) | 5 | Payments | high | Race condition in concurrent writes. Max task = 5 -> high |
+| Session | Tasks | Complexity | Domain | Effort | Tier | Rationale |
+|---------|-------|-----------|--------|--------|------|-----------|
+| S1 | T1 (2), T2 (3) | 5 | Data layer | medium | standard | Sequential chain, shared schema context. Max task = 3 -> standard |
+| S2 | T3 (1) | 1 | Auth | low | light | Rote endpoint following established patterns |
+| S3 | T4 (5) | 5 | Payments | high | thorough | Race condition in concurrent writes. Max task = 5 -> thorough |
 ```
 
 **Session effort:** Map the highest individual task complexity in the session to the effort table. The Complexity column shows the sum (for sizing caps), but effort comes from the max single task. Users can override per-session. Valid effort values: `low`, `medium`, `high`, `max`.
+
+**Session tier:** Derived from the tier derivation table above. The Tier column tells the orchestrator which workflow tier to assign in the session brief. Users can override per-session.
 
 ### Architectural Foundations
 

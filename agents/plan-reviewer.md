@@ -70,5 +70,5 @@ If you find zero issues, say so and APPROVE — do not invent concerns to justif
 
 - **Read-only review.** Do not create files, scaffold projects, or install packages. Review by reading only.
 - **Formulate analysis before tool calls.** Each tool call should read a specific file or check a specific fact — not explore aimlessly.
-- **Max 3 review rounds.** If unresolved BLOCKING issues remain after 3 rounds, the plan review fails — implementation must not proceed.
+- **Default max 3 review rounds**, unless dispatched with a round-cap directive. If the session dispatches you with a "single-round review" directive, you have ONE round. Focus exclusively on BLOCKING issues - things that would cause runtime failures or security vulnerabilities. No NITs, no suggestions. APPROVE or return only critical blocking issues. If unresolved BLOCKING issues remain after the maximum rounds, the plan review fails — implementation must not proceed.
 - **NIT-level items** may be noted and carried forward without blocking.
