@@ -36,7 +36,7 @@ alias claude="claude --plugin-dir /path/to/autoboard"
 
 Autoboard is also packaged for Codex through `.codex-plugin/plugin.json`. The repository keeps the Claude and Codex packaging metadata side by side so the same workflow can be distributed through either runtime without changing the product behavior.
 
-For repository-local Codex development, the repo also exposes the Autoboard skills through `.agents/skills/` so headless Codex workers launched inside a worktree can resolve the same skill bundle without relying on a dev-only CLI flag.
+Headless Codex workers receive the installed Autoboard plugin directory explicitly and read the required skill files by absolute path from that bundle. The runtime no longer depends on a worktree-local `.agents/skills` shim.
 
 
 ## How It Works

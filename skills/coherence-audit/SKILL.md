@@ -60,7 +60,7 @@ Write the COHERENCE-REPORT to `docs/autoboard/{slug}/sessions/coherence-L{N}.md`
 
 ### Dispatch Coherence Screener
 
-Dispatch the coherence screener via your provider's subagent mechanism with model `code-review-model` and these inputs. On Claude Code, use the `autoboard:coherence-screener` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-plugin-dir)/agents/coherence-screener.md` before screening:
+Dispatch the coherence screener via your provider's subagent mechanism with model `code-review-model` and these inputs. On Claude Code, use the `autoboard:coherence-screener` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-{slug}-plugin-dir)/agents/coherence-screener.md` before screening:
 
 - COHERENCE-REPORT text (the full `~~~COHERENCE-REPORT` block)
 - Design doc path: `docs/autoboard/{slug}/design.md`

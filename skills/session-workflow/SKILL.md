@@ -7,6 +7,10 @@ description: Session agent workflow — Explore, Plan, Plan Review, Implement, V
 
 You are a session agent spawned by autoboard as an isolated headless worker with full tool access. Your dependency sessions' changes are already merged into your branch.
 
+Your session brief tells you which provider launched you and gives you the plugin directory path. Whenever this workflow says "load a skill":
+- **Claude Code:** invoke the `/autoboard:...` skill via the Skill tool.
+- **Codex:** read the matching `{Plugin directory}/skills/.../SKILL.md` file with the Read tool and follow it directly.
+
 ## Worktree Navigation
 
 Your session brief contains a worktree path. Your FIRST action after loading this skill:
@@ -32,7 +36,10 @@ Update this file after: entering each phase, completing each task, encountering 
 
 ## Tracking
 
-If your session brief includes a `## Tracking` section, read the `Provider` field and invoke `/autoboard:tracking-{provider}-session` via the Skill tool (e.g., `/autoboard:tracking-github-session`). Follow the loaded provider skill. If your brief does NOT have a Tracking section, skip this.
+If your session brief includes a `## Tracking` section, read the `Provider` field and load the matching tracking session skill:
+- **Claude Code:** invoke `/autoboard:tracking-{provider}-session` via the Skill tool.
+- **Codex:** read `{Plugin directory}/skills/tracking-{provider}-session/SKILL.md`.
+Follow the loaded provider skill. If your brief does NOT have a Tracking section, skip this.
 
 ## Your Tasks
 
@@ -164,7 +171,10 @@ The plan must include:
 
 **Round cap:** standard = 1 round max, thorough = up to 3 rounds.
 
-**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below - do not stop here.
+**MANDATORY FIRST ACTION:** Load the receiving-review skill BEFORE dispatching the reviewer or evaluating any feedback.
+- **Claude Code:** invoke `/autoboard:receiving-review` via the Skill tool.
+- **Codex:** read `{Plugin directory}/skills/receiving-review/SKILL.md`.
+Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below - do not stop here.
 
 Dispatch an independent plan-review helper with the `plan-review-model` from your session brief's Configuration section (default: sonnet).
 
@@ -230,7 +240,10 @@ Independent tasks MAY be executed via parallel subagents at your discretion. **C
 **Update progress file:** Write `Phase: Verifying` to your progress file.
 **Tracking:** If tracking is active, move your ticket to "Verifying" and post a phase comment.
 
-Invoke `/autoboard:verification-light` via the Skill tool to load the verification protocol. Run the verify commands from your session brief. All must pass. **After all verification steps pass**, proceed immediately to Phase 6. Do not stop after verification.
+Load the verification protocol before running verify commands.
+- **Claude Code:** invoke `/autoboard:verification-light` via the Skill tool.
+- **Codex:** read `{Plugin directory}/skills/verification-light/SKILL.md`.
+Run the verify commands from your session brief. All must pass. **After all verification steps pass**, proceed immediately to Phase 6. Do not stop after verification.
 
 ## Phase 6: Code Review (BLOCKING GATE)
 
@@ -243,7 +256,10 @@ Invoke `/autoboard:verification-light` via the Skill tool to load the verificati
 
 **Round cap:** standard = 1 round max, thorough = up to 3 rounds.
 
-**MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below - do not stop here.
+**MANDATORY FIRST ACTION:** Load the receiving-review skill BEFORE dispatching the reviewer or evaluating any feedback.
+- **Claude Code:** invoke `/autoboard:receiving-review` via the Skill tool.
+- **Codex:** read `{Plugin directory}/skills/receiving-review/SKILL.md`.
+Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below - do not stop here.
 
 Dispatch an independent code-review helper with the `code-review-model` from your session brief's Configuration section (default: sonnet).
 

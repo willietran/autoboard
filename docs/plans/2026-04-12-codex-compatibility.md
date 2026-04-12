@@ -19,7 +19,7 @@ The implementation should build around the behavior we actually verified:
 - `codex exec` supports `--ephemeral`, `-C`, `--full-auto`, `--dangerously-bypass-approvals-and-sandbox`, and `-c model_reasoning_effort=...`
 - The orchestrator knows its current provider from runtime context; shell wrappers should not try to infer it from ambient environment variables
 - Codex distribution uses `.codex-plugin/plugin.json`
-- Repository-local Codex workers can discover the Autoboard skills through `.agents/skills/`
+- Codex child sessions receive the installed plugin directory explicitly and read required skill files by absolute path
 - Codex plugins package skills/apps/MCP metadata, but not a plugin-scoped custom agent system
 
 ## Task 1: Prove and Capture the Codex Worker Contract
@@ -42,7 +42,7 @@ Implement the narrow runtime seam:
 
 - add `bin/spawn-codex-session.sh` with the same interface as `bin/spawn-session.sh`
 - keep `bin/spawn-session.sh` as the Claude launcher
-- add the repository-local Codex skill fallback so headless Codex workers launched inside a worktree can resolve Autoboard skills
+- pass the installed plugin directory explicitly so headless Codex workers can read Autoboard skills and reviewer rubrics by absolute path
 - update `/autoboard:setup` so the current orchestrator writes the active provider and selected launcher path to temp files for the current run
 - update all isolated-worker spawn sites to use the selected launcher path instead of assuming Claude:
   - `skills/session-spawn/SKILL.md`
@@ -75,7 +75,6 @@ Primary files:
 - `.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json`
 - `.codex-plugin/plugin.json`
-- `.agents/skills`
 
 ## Task 4: Validate Runtime Parity
 

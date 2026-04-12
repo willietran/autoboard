@@ -162,7 +162,7 @@ If tracking is active: `close-ticket(qa-gate, "{QA-REPORT contents}")`, `move-ti
 
 ### Step 1 — Dispatch QA Validator
 
-Dispatch the QA validator via your provider's subagent mechanism with model `qa-model` and these inputs. On Claude Code, use the `autoboard:qa-validator` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-plugin-dir)/agents/qa-validator.md` before validating:
+Dispatch the QA validator via your provider's subagent mechanism with model `qa-model` and these inputs. On Claude Code, use the `autoboard:qa-validator` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-{slug}-plugin-dir)/agents/qa-validator.md` before validating:
 
 - QA-REPORT text (the full `~~~QA-REPORT` block)
 - Expected skips (from manifest's `expected-skips` list)

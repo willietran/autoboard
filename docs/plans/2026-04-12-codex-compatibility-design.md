@@ -23,7 +23,7 @@ The implementation in this branch should reflect the discovered Codex contract a
 
 - Codex headless runs use `codex exec --json`
 - Codex distribution uses `.codex-plugin/plugin.json`
-- Repository-local Codex workers can discover the same skills through `.agents/skills/`
+- Codex child sessions receive the installed plugin directory explicitly and read required skill files by absolute path
 - Codex plugins package skills/apps/MCP metadata, but reviewer prompts still live in `agents/*.md`
 - provider selection happens at spawn time by the orchestrator
 

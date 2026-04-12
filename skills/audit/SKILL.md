@@ -65,7 +65,7 @@ Tell the user which dimensions will be audited and which were skipped (and why).
 
 Spawn ALL dimension agents in parallel using your provider's subagent mechanism. Each agent is independent and read-only.
 
-**For each selected dimension**, resolve the absolute path to its `standards/dimensions/{name}.md` file in the plugin directory (read from `/tmp/autoboard-plugin-dir`) and pass the path to the dimension agent. Do NOT paste the file content into the prompt -- the agent has Read tool access.
+**For each selected dimension**, resolve the absolute path to its `standards/dimensions/{name}.md` file in the plugin directory (read from `/tmp/autoboard-{slug}-plugin-dir`) and pass the path to the dimension agent. Do NOT paste the file content into the prompt -- the agent has Read tool access.
 
 **Dimension agent prompt template:**
 

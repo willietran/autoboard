@@ -13,7 +13,7 @@ A session on your team failed. Before deciding what to do, understand what happe
 
 ## Step 1: Gather Evidence
 
-Dispatch the `evidence-gatherer` helper via your provider's subagent mechanism with model `explore-model` and these inputs. On Claude Code, use the `autoboard:evidence-gatherer` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-plugin-dir)/agents/evidence-gatherer.md` before beginning.
+Dispatch the `evidence-gatherer` helper via your provider's subagent mechanism with model `explore-model` and these inputs. On Claude Code, use the `autoboard:evidence-gatherer` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-{slug}-plugin-dir)/agents/evidence-gatherer.md` before beginning.
 
 - Session ID and slug
 - JSONL output path: `/tmp/autoboard-{slug}-s{N}-output.jsonl`
@@ -45,7 +45,7 @@ If this run is on Claude Code:
 
 If this run is on Codex:
 - this denial came from the Codex launcher sandbox/approval mode, not the Claude permission manifest
-- re-run with `skip-permissions: true` only if the broader sandbox is acceptable
+- Codex currently requires `skip-permissions: true` because Claude-style session settings files are unsupported there
 - otherwise adjust the Codex launcher configuration before retrying
 ```
 
@@ -126,10 +126,11 @@ All other failures. Proceed to Step 3 for diagnosis and retry.
 **Retry mechanics:** Reuse the existing worktree (it has partial work). Write a new brief to `/tmp/autoboard-{slug}-s{N}-brief.md` with your diagnosis and adjusted instructions prepended. Spawn via the same shell wrapper:
 
 ```bash
-"$(cat /tmp/autoboard-session-spawn-script)" /tmp/autoboard-{slug}-s{N}-brief.md \
+"$(cat /tmp/autoboard-{slug}-session-spawn-script)" /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model} \
   --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \
+  --plugin-dir "$(cat /tmp/autoboard-{slug}-plugin-dir)" \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \

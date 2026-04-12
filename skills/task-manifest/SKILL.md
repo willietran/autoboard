@@ -40,7 +40,7 @@ qa-setup: npm run seed:test-data  # Commands to prepare environment for browser 
 env-template: .env.example     # Path to env template file (optional, omit if not needed)
 retries: 1                     # Max automatic retries per session
 tracking-provider: none         # Set to 'github' for GitHub Projects V2 live tracking
-skip-permissions: false        # Set true to use --dangerously-skip-permissions (default: false)
+skip-permissions: false        # Required for Codex runs until session-permissions.json is supported there (default: false)
 qa-mode: build-only            # build-only (default) or full (browser + build/test)
 ---
 ```
@@ -393,7 +393,7 @@ The manifest must include:
 
 ### Session Permissions
 
-Generate `docs/autoboard/{slug}/session-permissions.json` alongside the manifest. This file controls what tools **spawned Claude session agents** can use — it does NOT affect your main agent or the orchestrator. Claude sessions run in `dontAsk` mode, so unlisted tools are auto-denied (no hanging on permission prompts). Codex currently uses its documented non-interactive sandbox modes instead of translating this manifest one-for-one, but keep generating the file so Claude remains fully supported and future Codex mappings have a stable source of truth.
+Generate `docs/autoboard/{slug}/session-permissions.json` alongside the manifest. This file controls what tools **spawned Claude session agents** can use — it does NOT affect your main agent or the orchestrator. Claude sessions run in `dontAsk` mode, so unlisted tools are auto-denied (no hanging on permission prompts). Codex does not support this manifest-based session settings path yet, so Codex runs currently require `skip-permissions: true`. Keep generating the file so Claude remains fully supported and future Codex mappings have a stable source of truth.
 
 **Generation logic:**
 

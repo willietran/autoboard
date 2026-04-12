@@ -2,16 +2,16 @@
 
 An AI engineering lead that manages a team of coding AIs so they don't cut corners.
 
-Autoboard is a Codex plugin that decomposes features into parallel coding sessions, each with mandatory review gates, then validates the integrated result with cross-session quality audits — catching the problems that no individual session could see. The orchestrator exercises judgment: it arbitrates review disputes, curates cross-session knowledge, validates QA claims, and diagnoses failures before deciding how to respond.
+Autoboard is a Claude Code and Codex plugin that decomposes features into parallel coding sessions, each with mandatory review gates, then validates the integrated result with cross-session quality audits. The orchestrator arbitrates review disputes, curates cross-session knowledge, validates QA claims, and diagnoses failures before deciding how to respond.
 
-**Architecture:** Skills-only plugin with a thin shell wrapper (`bin/spawn-session.sh`). The Main Agent (Codex) is the orchestrator — the engineering lead. It reads a manifest, spawns session agents via `Codex -p` subprocesses, merges results, and runs QA gates. Sessions are full main agents with complete tool access, so they can spawn Explore subagents, plan reviewers, and code reviewers.
+**Architecture:** Skills-only plugin with provider-specific packaging (`.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`) and thin provider-specific launchers (`bin/spawn-session.sh` for Claude Code, `bin/spawn-codex-session.sh` for Codex). The Main Agent is the orchestrator. It reads a manifest, spawns session agents through the current provider's headless worker path, merges results, and runs QA gates. Sessions are full main agents with complete tool access, so they can spawn Explore subagents, plan reviewers, and code reviewers.
 
 ## How It Works
 
 ```
-/autoboard:brainstorm  →  design.md + standards.md (interactive design session)
-/autoboard:standards   →  standards.md (configure quality dimensions interactively)
-/autoboard:task-manifest  →  manifest.md (sessions, tasks, deps, QA gates)
+/autoboard:brainstorm  →  design.md + standards.md
+/autoboard:standards   →  standards.md
+/autoboard:task-manifest  →  manifest.md
 /autoboard:run  →  Main Agent orchestrates parallel sessions
 ```
 
@@ -29,21 +29,21 @@ Add the marketplace and install:
 For working on autoboard itself, use the `--plugin-dir` flag:
 
 ```bash
-alias Codex="Codex --plugin-dir /path/to/autoboard"
+alias claude="claude --plugin-dir /path/to/autoboard"
 ```
 
-Changes to the repo are instantly reflected — no copying needed.
+Changes to the repo are instantly reflected.
 
 ## Repository Structure
 
-Conventions — don't enumerate every file, just know where to look:
-
-- **`.Codex-plugin/plugin.json`** — Plugin manifest
-- **`bin/spawn-session.sh`** — Thin wrapper around `Codex -p` for spawning session agents
-- **`config/default-session-permissions.json`** — Default allow/deny rules for session agents
-- **`standards/dimensions/<name>.md`** — One file per quality dimension (see `standards/README.md`)
+- **`.claude-plugin/plugin.json`** — Claude plugin manifest
+- **`.codex-plugin/plugin.json`** — Codex plugin manifest
+- **`bin/spawn-session.sh`** — Claude launcher for isolated session agents
+- **`bin/spawn-codex-session.sh`** — Codex launcher for isolated session agents
+- **`config/default-session-permissions.json`** — Default allow/deny rules for Claude session agents
+- **`standards/dimensions/<name>.md`** — One file per quality dimension
 - **`skills/<name>/SKILL.md`** — Each skill lives in its own directory
-- **`agents/<name>.md`** — Subagent definitions (plan-reviewer, code-reviewer)
+- **`agents/<name>.md`** — Reviewer/helper rubrics
 - **`docs/`** — Reference docs and design specs
 
 **Skills by role:**
@@ -60,84 +60,68 @@ Conventions — don't enumerate every file, just know where to look:
 ## Git Conventions
 
 - **Never commit to or push to `main`.** All work happens on feature branches.
-- Feature branch: `autoboard/<slug>` (e.g., `autoboard/user-auth`)
-- Session branches: `autoboard/<slug>-s<N>` (e.g., `autoboard/user-auth-s1`) — created by orchestrator via manual worktrees, ephemeral
+- Feature branch: `autoboard/<slug>`
+- Session branches: `autoboard/<slug>-s<N>`
 - One-tier squash merge: session branches squash-merge → feature branch
 - One commit per session on the feature branch
 
----
-
 ## Architecture
 
-**Main Agent = Orchestrator.** It reads a manifest, spawns session agents via `Codex -p`, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use `Codex -p` (not the Agent tool) because session agents need to spawn their own subagents — a platform constraint.
+**Main Agent = Orchestrator.** It reads a manifest, spawns session agents through the current provider's headless worker path, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use isolated headless workers instead of orchestrator-owned subagents because they need to spawn their own helpers without polluting the main context.
 
 | Orchestrator does | Session Agent does |
 |---|---|
 | Parse manifest, build dependency graph | Explore codebase, plan implementation |
-| Create worktrees, spawn `Codex -p` sessions | Execute tasks (TDD, implementation, tests) |
-| Merge session branches to feature branch | Spawn plan-reviewer and code-reviewer subagents |
+| Create worktrees, spawn isolated sessions | Execute tasks (TDD, implementation, tests) |
+| Merge session branches to feature branch | Spawn plan-reviewer and code-reviewer helpers |
 | Run QA gates between layers | Run build verification within worktree |
-| Handle failures (retry once, then ask user) | Diagnose and fix issues within session scope |
+| Handle failures (retry, escalate) | Diagnose and fix issues within session scope |
 | Report progress, update progress.md | Write session status files and knowledge |
 
 ### Session Lifecycle
 
-Each session agent executes this workflow (via `/autoboard:session-workflow`):
+Each session agent executes this workflow:
 
-1. **Explore** — Spawn Explore subagents to understand relevant code
-2. **Plan** — Write implementation plan
-3. **Plan Review** — Spawn plan-reviewer subagent; max 3 rounds
-4. **Implement** — Execute plan task-by-task (TDD where marked: RED → GREEN → REFACTOR)
-5. **Verify** — Run full build pipeline
-6. **Code Review** — Spawn code-reviewer subagent; max 3 rounds
-7. **Commit** — Commit each task, write session status file
+1. **Explore**
+2. **Plan**
+3. **Plan Review**
+4. **Implement**
+5. **Verify**
+6. **Code Review**
+7. **Commit**
 
 ### QA Gates
 
-QA gates run between dependency layers to catch compound errors. The orchestrator spawns a QA subagent that invokes `/autoboard:verification --full` — build validation + browser smoke tests (gstack browse, Playwright MCP, or similar). Falls back to build-only if no browser tool is installed. QA runs as a subagent to keep browser output out of the orchestrator's window.
-
----
+QA gates run between dependency layers to catch compound errors. The orchestrator spawns a QA subagent that invokes `/autoboard:verification --full` and keeps heavy output out of the orchestrator's window.
 
 ## Non-Negotiable Standards
 
 ### Mandatory Review Gates
 
-Two review gates are BLOCKING PREREQUISITES in every session. Skipping either is a non-negotiable violation.
+Two review gates are blocking prerequisites in every session.
 
-**Gate 1 — Plan Review (before implementation):**
-- Dispatch the `autoboard:plan-reviewer` agent
-- Critically evaluate feedback — do NOT blindly agree
-- Update the plan with accepted changes before writing any code
-- **NEVER start implementation without completing this gate**
+**Gate 1 — Plan Review**
+- Dispatch an independent plan-review helper through the current provider
+- Critically evaluate feedback
+- Update the plan before implementation
 
-**Gate 2 — Code Review (before final commit):**
-- Dispatch the `autoboard:code-reviewer` agent
-- Critically evaluate feedback — verify each suggestion technically
-- Implement fixes, re-run verification
-- **NEVER finalize a commit without completing this gate**
-
-**Receiving review feedback — critical thinking protocol:**
-
-| Thought that means STOP | Reality |
-|---|---|
-| "The reviewer said X, so I'll just do X" | Verify X is correct first. Reviewers can be wrong. |
-| "I'll accept all suggestions to be safe" | Accepting wrong suggestions makes code worse, not better. |
-| "This suggestion seems off but I'll do it anyway" | If it seems off, investigate. Trust your analysis. |
-| "The plan looks good, I'll skip review" | Run the review subagent. Every time. No exceptions. |
-| "All tests pass, time to commit" | Run the code review subagent first. |
+**Gate 2 — Code Review**
+- Dispatch an independent code-review helper through the current provider
+- Critically evaluate feedback
+- Implement fixes and re-run verification before final commit
 
 ### Security
 
-- **No shell injection.** All subprocess calls must use argument arrays — never string interpolation into shell commands.
-- **Validate manifest input.** Task fields parsed from markdown are untrusted. Sanitize file paths, task IDs, and branch names.
+- **No shell injection.** All subprocess calls must use argument arrays.
+- **Validate manifest input.** Sanitize file paths, task IDs, and branch names.
 - **Preserve session branches on failure.** Never delete a session branch until its work is successfully merged.
-- **Scoped session permissions.** Sessions run in `dontAsk` mode with project-specific allow/deny rules. Generated by `/autoboard:task-manifest` at `docs/autoboard/{slug}/session-permissions.json`. Fallback: `config/default-session-permissions.json`. Opt out: `skip-permissions: true` in manifest.
+- **Scoped session permissions.** Claude sessions use `session-permissions.json` in `dontAsk` mode. Codex does not support that manifest path yet, so Codex runs currently require `skip-permissions: true` in the manifest.
 
-### Codex Friendliness
+### Agent Friendliness
 
-The codebase must be easily navigable by Codex.
+The codebase must be easily navigable by Claude Code and Codex.
 
-- **Zero dead code.** No commented-out blocks, no unused functions, no orphaned imports.
-- **Predictable naming.** Files, functions, and variables named so their purpose is obvious.
-- **Small, focused files.** Each file has one clear responsibility.
+- **Zero dead code.**
+- **Predictable naming.**
+- **Small, focused files.**
 - **Leave the codebase cleaner than you found it.**

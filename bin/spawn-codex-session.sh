@@ -6,17 +6,23 @@ set -euo pipefail
 # the current provider's wrapper without changing the product workflow.
 #
 # Codex CLI does not currently expose Claude-style per-command permission
-# manifests. This wrapper therefore uses the closest documented non-interactive
-# modes:
-# - default: --full-auto with workspace-write sandbox
-# - --skip-permissions: --dangerously-bypass-approvals-and-sandbox
+# manifests. This wrapper therefore fails closed if a session settings file is
+# supplied. Codex runs must opt into the runtime's documented non-interactive
+# mode explicitly via --skip-permissions, which keeps Codex's normal sandboxing
+# but disables the unsupported manifest path.
+#
+# Codex only exposes `--add-dir` for granting workspace access outside the main
+# worktree. That directory is writable, not read-only, so this wrapper widens
+# access to the installed plugin bundle when explicit skill-file loading is
+# needed.
 #
 # Usage: spawn-codex-session.sh <brief-file> --model <model> --cwd <worktree-path>
 #        [--effort <low|medium|high|max>] [--skip-permissions]
+#        [--plugin-dir <path>]
 #        [--standards <file>] [--test-baseline <file>] [--knowledge <file>]
 #        [--codesight <file>]
 
-BRIEF_FILE="" MODEL="" CWD="." SKIP_PERMISSIONS=false SETTINGS_FILE=""
+BRIEF_FILE="" MODEL="" CWD="." SKIP_PERMISSIONS=false SETTINGS_FILE="" PLUGIN_DIR=""
 STANDARDS_FILE="" TEST_BASELINE_FILE="" KNOWLEDGE_FILE="" CODESIGHT_FILE="" EFFORT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -25,6 +31,7 @@ while [[ $# -gt 0 ]]; do
     --effort) EFFORT="$2"; shift 2 ;;
     --skip-permissions) SKIP_PERMISSIONS=true; shift ;;
     --settings) SETTINGS_FILE="$2"; shift 2 ;;
+    --plugin-dir) PLUGIN_DIR="$2"; shift 2 ;;
     --standards) STANDARDS_FILE="$2"; shift 2 ;;
     --test-baseline) TEST_BASELINE_FILE="$2"; shift 2 ;;
     --knowledge) KNOWLEDGE_FILE="$2"; shift 2 ;;
@@ -33,8 +40,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -z "$BRIEF_FILE" ]] && { echo "Usage: spawn-codex-session.sh <brief-file> --model <model> --cwd <path> [--effort <level>] [--skip-permissions]" >&2; exit 1; }
+[[ -z "$BRIEF_FILE" ]] && { echo "Usage: spawn-codex-session.sh <brief-file> --model <model> --cwd <path> [--effort <level>] [--skip-permissions] [--plugin-dir <path>]" >&2; exit 1; }
 [[ ! -f "$BRIEF_FILE" ]] && { echo "Brief file not found: $BRIEF_FILE" >&2; exit 1; }
+if [[ -n "$SETTINGS_FILE" ]]; then
+  echo "ERROR: Codex launcher does not support Claude-style session settings files. Re-run this session with --skip-permissions or use the Claude launcher." >&2
+  exit 2
+fi
+if [[ "$SKIP_PERMISSIONS" != "true" ]]; then
+  echo "ERROR: Codex launcher requires --skip-permissions because session settings files are unsupported. Set skip-permissions: true in the manifest or use the Claude launcher." >&2
+  exit 2
+fi
 
 case "${MODEL:-opus}" in
   opus) MODEL_ID="gpt-5.4" ;;
@@ -94,16 +109,11 @@ CODEX_ARGS=(
   -C "$CWD"
   -m "$MODEL_ID"
 )
+if [[ -n "$PLUGIN_DIR" && -d "$PLUGIN_DIR" ]]; then
+  CODEX_ARGS+=(--add-dir "$PLUGIN_DIR")
+fi
 if [[ -n "$EFFORT_CONFIG" && "$EFFORT_CONFIG" != "medium" ]]; then
   CODEX_ARGS+=(-c "model_reasoning_effort=\"$EFFORT_CONFIG\"")
-fi
-if [[ "$SKIP_PERMISSIONS" == "true" ]]; then
-  CODEX_ARGS=(exec - --json --ephemeral --dangerously-bypass-approvals-and-sandbox -C "$CWD" -m "$MODEL_ID")
-  if [[ -n "$EFFORT_CONFIG" && "$EFFORT_CONFIG" != "medium" ]]; then
-    CODEX_ARGS+=(-c "model_reasoning_effort=\"$EFFORT_CONFIG\"")
-  fi
-elif [[ -n "$SETTINGS_FILE" ]]; then
-  echo "WARN: Codex launcher does not support Claude-style session settings files yet; ignoring --settings $SETTINGS_FILE and using --full-auto." >&2
 fi
 
 PROMPT_FILE="$(mktemp /tmp/autoboard-codex-prompt.XXXXXX)"

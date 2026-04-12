@@ -12,6 +12,7 @@ set -euo pipefail
 #
 # Usage: spawn-session.sh <brief-file> --model <model> --cwd <worktree-path>
 #        [--effort <low|medium|high|max>] [--skip-permissions]
+#        [--plugin-dir <path>]
 #        [--standards <file>] [--test-baseline <file>] [--knowledge <file>]
 #        [--codesight <file>]
 
@@ -26,6 +27,7 @@ while [[ $# -gt 0 ]]; do
     --effort) EFFORT="$2"; shift 2 ;;
     --skip-permissions) SKIP_PERMISSIONS=true; shift ;;
     --settings) SETTINGS_FILE="$2"; shift 2 ;;
+    --plugin-dir) PLUGIN_DIR="$2"; shift 2 ;;
     --standards) STANDARDS_FILE="$2"; shift 2 ;;
     --test-baseline) TEST_BASELINE_FILE="$2"; shift 2 ;;
     --knowledge) KNOWLEDGE_FILE="$2"; shift 2 ;;
@@ -34,7 +36,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -z "$BRIEF_FILE" ]] && { echo "Usage: spawn-session.sh <brief-file> --model <model> --cwd <path> [--effort <level>] [--skip-permissions]" >&2; exit 1; }
+[[ -z "$BRIEF_FILE" ]] && { echo "Usage: spawn-session.sh <brief-file> --model <model> --cwd <path> [--effort <level>] [--skip-permissions] [--plugin-dir <path>]" >&2; exit 1; }
 [[ ! -f "$BRIEF_FILE" ]] && { echo "Brief file not found: $BRIEF_FILE" >&2; exit 1; }
 
 # Map model aliases to full model IDs

@@ -59,20 +59,21 @@ Write the fixer's brief to `/tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{
 ```
 You are a autoboard session agent.
 
-Your FIRST action must be to invoke /autoboard:session-workflow via the Skill tool.
-This loads your full workflow and shell safety guidelines.
-Do NOT write any code or make any changes before invoking this skill.
+Your FIRST action depends on your provider:
+- If Provider is `claude`: invoke `/autoboard:session-workflow` via the Skill tool.
+- If Provider is `codex`: read `{plugin-dir}/skills/session-workflow/SKILL.md` with the Read tool and follow it exactly.
+Do NOT write any code or make any changes before loading that workflow.
 
 ## Session Brief
 
 Session: Coherence Fix -- Layer {N}, Round {round}, Group {group}
-Provider: {value of /tmp/autoboard-provider}
+Provider: {value of /tmp/autoboard-{slug}-provider}
 Feature branch: autoboard/{slug}
 Session branch: autoboard/{slug}-coherence-fix-L{N}-r{round}-g{group}
 Project directory: docs/autoboard/{slug}/
 Worktree path: /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}
 Progress directory: /tmp/autoboard-{slug}-progress/
-Plugin directory: {value of /tmp/autoboard-plugin-dir}
+Plugin directory: {value of /tmp/autoboard-{slug}-plugin-dir}
 
 [COHERENCE FIX] Layer coherence audit found issues after Layer {N}.
 
@@ -141,8 +142,8 @@ If the root cause requires a significant refactor, do the refactor.
 ## Available Skills and Agents
 
 The session workflow will tell you when to use each of these:
-- /autoboard:verification-light -- verification protocol
-- /autoboard:receiving-review -- critical thinking protocol for processing review feedback
+- Claude skill entrypoints: `/autoboard:verification-light`, `/autoboard:receiving-review`
+- Codex skill files: `{plugin-dir}/skills/verification-light/SKILL.md`, `{plugin-dir}/skills/receiving-review/SKILL.md`
 - Reviewer rubrics: `{plugin-dir}/agents/plan-reviewer.md` and `{plugin-dir}/agents/code-reviewer.md`
 ```
 
@@ -159,10 +160,11 @@ If tracking is disabled, omit the Tracking section entirely.
 Spawn this fixer as a **background Bash command**:
 
 ```bash
-"$(cat /tmp/autoboard-session-spawn-script)" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
+"$(cat /tmp/autoboard-{slug}-session-spawn-script)" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
   --model {model from frontmatter} \
   --effort {effort of the session that produced the failing code} \
   --cwd /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} \
+  --plugin-dir "$(cat /tmp/autoboard-{slug}-plugin-dir)" \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \
