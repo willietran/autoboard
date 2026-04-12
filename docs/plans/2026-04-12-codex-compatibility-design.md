@@ -17,6 +17,18 @@ Make Autoboard work on Codex with the same product behavior it has on Claude tod
 
 This is a compatibility project, not a redesign.
 
+## Codex Packaging Contract
+
+The implementation in this branch should reflect the discovered Codex contract at a high level:
+
+- Codex headless runs use `codex exec --json`
+- Codex distribution uses `.codex-plugin/plugin.json`
+- Repository-local Codex workers can discover the same skills through `.agents/skills/`
+- Codex plugins package skills/apps/MCP metadata, but reviewer prompts still live in `agents/*.md`
+- provider selection happens at spawn time by the orchestrator
+
+These details inform the compatibility seam. They do not change Autoboard's product behavior.
+
 ## User-Facing Success Criteria
 
 On Codex, the user should be able to:
@@ -32,7 +44,7 @@ On Claude, nothing about the product's operating model should change.
 
 Autoboard already uses two execution patterns:
 
-- The orchestrator spawns headless worker sessions and fixer sessions via `bin/spawn-session.sh`.
+- The orchestrator spawns headless worker sessions and fixer sessions via provider-specific shell launchers.
 - Inside those headless worker sessions, the session agent can spawn its own helper subagents for Explore, plan review, and code review.
 - QA and coherence audit remain orchestrator-owned subagent work today.
 
@@ -115,17 +127,25 @@ QA and coherence audit should keep running where they run today unless a strict 
 Primary compatibility touchpoints:
 
 - `bin/spawn-session.sh`
-- new Codex spawn wrapper in `bin/`
+- `bin/spawn-codex-session.sh`
+- `skills/setup/SKILL.md`
 - `skills/session-spawn/SKILL.md`
 - `skills/run/SKILL.md`
 - `skills/session-workflow/SKILL.md`
-- fixer skills that currently call `bin/spawn-session.sh`
+- `skills/qa-gate/SKILL.md`
+- `skills/qa-fixer/SKILL.md`
+- `skills/coherence-audit/SKILL.md`
+- `skills/coherence-fixer/SKILL.md`
+- `skills/failure/SKILL.md`
+- `skills/knowledge/SKILL.md`
 - `skills/task-manifest/SKILL.md`
 - `skills/verification/SKILL.md`
 - `README.md`
 - `CLAUDE.md`
-- `.claude-plugin/plugin.json`
 - `package.json`
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+- `.codex-plugin/plugin.json`
 
 ## Risks
 

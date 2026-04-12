@@ -13,7 +13,7 @@ A session on your team failed. Before deciding what to do, understand what happe
 
 ## Step 1: Gather Evidence
 
-Dispatch the `autoboard:evidence-gatherer` agent via the Agent tool with model `explore-model` and these inputs:
+Dispatch the `evidence-gatherer` helper via your provider's subagent mechanism with model `explore-model` and these inputs. On Claude Code, use the `autoboard:evidence-gatherer` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-plugin-dir)/agents/evidence-gatherer.md` before beginning.
 
 - Session ID and slug
 - JSONL output path: `/tmp/autoboard-{slug}-s{N}-output.jsonl`
@@ -31,17 +31,22 @@ Use the evidence summary from Step 1 to classify into one of four categories:
 
 ### 2a. Permission Denial
 
-If `preliminary_classification` is `permission_denial` (or `error_excerpts` contain "permission denied", "auto-denied", "not allowed", "tool not permitted"), this is a permissions issue, not a code issue.
+If `preliminary_classification` is `permission_denial` (or `error_excerpts` contain "permission denied", "auto-denied", "not allowed", "tool not permitted"), this is a permissions/sandbox issue, not a code issue.
 
 **Do NOT retry.** Retrying with the same permissions will hit the same denial. Report to the user immediately:
 
 ```
-S{N} ({focus}) failed — a tool was denied by session permissions.
+S{N} ({focus}) failed — a tool was denied by the session runtime.
 Denied command: {from evidence summary's permission_denied_command}
 
-To fix: add the matching Bash rule to docs/autoboard/{slug}/session-permissions.json
-Example: "Bash(docker compose *)"
-Or set `skip-permissions: true` in the manifest to bypass all permission checks.
+If this run is on Claude Code:
+- add the matching Bash rule to docs/autoboard/{slug}/session-permissions.json
+- Example: "Bash(docker compose *)"
+
+If this run is on Codex:
+- this denial came from the Codex launcher sandbox/approval mode, not the Claude permission manifest
+- re-run with `skip-permissions: true` only if the broader sandbox is acceptable
+- otherwise adjust the Codex launcher configuration before retrying
 ```
 
 **Tracking:** If active, `post-comment(session, "Permission denied: {denied command}. Awaiting user fix.")` and `move-ticket(session, Failed)`.
@@ -121,7 +126,7 @@ All other failures. Proceed to Step 3 for diagnosis and retry.
 **Retry mechanics:** Reuse the existing worktree (it has partial work). Write a new brief to `/tmp/autoboard-{slug}-s{N}-brief.md` with your diagnosis and adjusted instructions prepended. Spawn via the same shell wrapper:
 
 ```bash
-"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-s{N}-brief.md \
+"$(cat /tmp/autoboard-session-spawn-script)" /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model} \
   --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \

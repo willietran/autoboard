@@ -10,11 +10,11 @@
         "source": "npm",
         "package": "@thelittlebyte/autoboard"
       },
-      "description": "AI-driven development orchestrator — breaks features into focused agent sessions with process gates, worktree isolation, and QA checkpoints",
+      "description": "AI-driven development orchestrator for Claude Code and Codex — breaks features into focused agent sessions with process gates, worktree isolation, and QA checkpoints",
       "homepage": "https://github.com/willietran/autoboard",
       "repository": "https://github.com/willietran/autoboard",
       "license": "MIT",
-      "keywords": ["claude-code", "plugin", "orchestrator", "agent"]
+      "keywords": ["claude-code", "codex", "plugin", "orchestrator", "agent"]
     }
   ]
 }

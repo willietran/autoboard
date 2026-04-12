@@ -11,7 +11,7 @@ description: Resolve project, parse manifest, run preflight checks, and display 
 
 ## Step 0: Resolve Plugin Directory
 
-Resolve the autoboard plugin directory and persist it for the entire run. All downstream skills (session-spawn, qa-fixer, coherence-fixer, failure) read from this file to find `bin/spawn-session.sh` and `config/`.
+Resolve the autoboard plugin directory and persist it for the current run. All downstream skills (session-spawn, qa-fixer, coherence-fixer, failure, audit) read from these temp files to find the launcher scripts, reviewer rubrics, repository-local Codex skill fallback, and `config/`.
 
 ```bash
 # Resolve autoboard plugin directory
@@ -25,7 +25,24 @@ fi
 echo "$AUTOBOARD_DIR" > /tmp/autoboard-plugin-dir
 ```
 
-Verify: `[[ -f "$AUTOBOARD_DIR/bin/spawn-session.sh" ]] && echo "OK: $AUTOBOARD_DIR" || echo "FAIL: could not find autoboard plugin directory"`
+Then resolve the current provider from **your runtime context** (do NOT ask the shell to infer this from environment variables):
+
+- If you are running inside **Codex**, set:
+  - `AUTOBOARD_PROVIDER="codex"`
+  - `SESSION_SPAWN_SCRIPT="$AUTOBOARD_DIR/bin/spawn-codex-session.sh"`
+- If you are running inside **Claude Code**, set:
+  - `AUTOBOARD_PROVIDER="claude"`
+  - `SESSION_SPAWN_SCRIPT="$AUTOBOARD_DIR/bin/spawn-session.sh"`
+
+Persist both for the rest of this `/autoboard:run` invocation:
+
+```bash
+printf '%s\n' "$AUTOBOARD_PROVIDER" > /tmp/autoboard-provider
+printf '%s\n' "$SESSION_SPAWN_SCRIPT" > /tmp/autoboard-session-spawn-script
+```
+
+Verify:
+`[[ -f "$AUTOBOARD_DIR/bin/spawn-session.sh" && -f "$AUTOBOARD_DIR/bin/spawn-codex-session.sh" && -f "$SESSION_SPAWN_SCRIPT" ]] && echo "OK: $AUTOBOARD_DIR ($AUTOBOARD_PROVIDER)" || echo "FAIL: could not resolve autoboard plugin directory or session launcher"`
 
 If verification fails, ask the user for the plugin directory path.
 

@@ -408,7 +408,7 @@ After that, it updates progress, cleans up worktrees, and reports results.
 ## Rules
 
 - **You are the orchestrator, not a session agent.** Do not implement code yourself. Your job is to spawn agents, merge their work, and run QA.
-- **Sessions spawn via `bin/spawn-session.sh`, not the Agent tool.** The Agent tool creates subagents that cannot spawn their own subagents. The shell wrapper creates full main agents with complete tool access.
+- **Sessions spawn via the provider-specific headless wrapper from `/tmp/autoboard-session-spawn-script`, not as orchestrator-owned subagents.** Long-running session workers need isolated main-agent contexts so they can spawn their own helpers without polluting the orchestrator.
 - **Merges are sequential.** Never merge two sessions at the same time.
 - **QA runs as a subagent.** Never run browser tests or heavy build validation in your own context.
 - **Report progress.** The user should always know what's happening. Update `progress.md` after every significant event.

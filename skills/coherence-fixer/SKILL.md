@@ -66,11 +66,13 @@ Do NOT write any code or make any changes before invoking this skill.
 ## Session Brief
 
 Session: Coherence Fix -- Layer {N}, Round {round}, Group {group}
+Provider: {value of /tmp/autoboard-provider}
 Feature branch: autoboard/{slug}
 Session branch: autoboard/{slug}-coherence-fix-L{N}-r{round}-g{group}
 Project directory: docs/autoboard/{slug}/
 Worktree path: /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}
 Progress directory: /tmp/autoboard-{slug}-progress/
+Plugin directory: {value of /tmp/autoboard-plugin-dir}
 
 [COHERENCE FIX] Layer coherence audit found issues after Layer {N}.
 
@@ -141,8 +143,7 @@ If the root cause requires a significant refactor, do the refactor.
 The session workflow will tell you when to use each of these:
 - /autoboard:verification-light -- verification protocol
 - /autoboard:receiving-review -- critical thinking protocol for processing review feedback
-- autoboard:plan-reviewer agent -- plan review (model: plan-review-model above)
-- autoboard:code-reviewer agent -- code review (model: code-review-model above)
+- Reviewer rubrics: `{plugin-dir}/agents/plan-reviewer.md` and `{plugin-dir}/agents/code-reviewer.md`
 ```
 
 #### Tracking Section
@@ -158,7 +159,7 @@ If tracking is disabled, omit the Tracking section entirely.
 Spawn this fixer as a **background Bash command**:
 
 ```bash
-"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
+"$(cat /tmp/autoboard-session-spawn-script)" /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group}-brief.md \
   --model {model from frontmatter} \
   --effort {effort of the session that produced the failing code} \
   --cwd /tmp/autoboard-{slug}-coherence-fix-L{N}-r{round}-g{group} \

@@ -63,7 +63,7 @@ digraph brainstorming {
 
 ### 2. Acknowledge & Explore
 - Acknowledge the user's idea with brief collaborative feedback — make them feel heard before diving into process
-- Then explore the **relevant** parts of the codebase using the Agent tool with `subagent_type="Explore"`
+- Then explore the **relevant** parts of the codebase using your provider's exploration subagent mechanism
 - Check files, docs, and recent commits related to the described feature
 - If this is a greenfield project with no existing code to integrate with, skip the exploration
 
@@ -156,7 +156,7 @@ Frameworks: {frameworks from design discussion}
 
 ### 7. Spec Review Loop
 After writing the design doc:
-1. Dispatch a spec-document-reviewer subagent via the Agent tool
+1. Dispatch a spec-document-reviewer subagent via your provider's subagent mechanism
 2. The reviewer evaluates: completeness, feasibility, security, edge cases, clarity
 3. Process feedback critically (don't blindly agree)
 4. Update the design doc with accepted changes

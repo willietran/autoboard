@@ -5,7 +5,7 @@ description: Session agent workflow — Explore, Plan, Plan Review, Implement, V
 
 # Session Workflow
 
-You are a session agent spawned by autoboard as a `claude -p` subprocess with full tool access. Your dependency sessions' changes are already merged into your branch.
+You are a session agent spawned by autoboard as an isolated headless worker with full tool access. Your dependency sessions' changes are already merged into your branch.
 
 ## Worktree Navigation
 
@@ -109,7 +109,12 @@ Then exit. The orchestrator will read both sides and arbitrate.
 **Update progress file:** Write `Phase: Exploring` to your progress file before starting.
 **Tracking:** If tracking is active, move your ticket to "Exploring" and post a phase comment.
 
-Exploration happens in two steps. Use Claude Code's built-in Explore subagent for both. When spawning Explore subagents, use the `explore-model` from your session brief's Configuration section (default: haiku).
+Exploration happens in two steps. Use your provider's built-in exploration subagent for both:
+
+- **Claude Code:** use the built-in Explore subagent
+- **Codex:** use the built-in `explorer` subagent
+
+When spawning Explore subagents, use the `explore-model` from your session brief's Configuration section (default: haiku) when your provider supports explicit helper-model selection. If it does not, keep the provider default and continue.
 
 **Step 0: Review codebase context.** If your session brief includes a `## Codebase Context (codesight)` section, it contains an index of codebase context articles (routes, schema, components, etc.). Read the articles relevant to your tasks with the Read tool -- the index lists file paths and descriptions. This gives you a structural map before exploring specific targets. If no Codebase Context section is present, skip to Step 1.
 
@@ -161,7 +166,12 @@ The plan must include:
 
 **MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the plan reviewer below - do not stop here.
 
-Dispatch the `autoboard:plan-reviewer` agent via the Agent tool with the `plan-review-model` from your session brief's Configuration section (default: sonnet). Tell it the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`), the manifest path (`docs/autoboard/{slug}/manifest.md`), your task IDs, and the standards file path. Include in your prompt: "You MUST read the plan file and manifest with the Read tool before beginning your review." Do NOT paste the plan or task context into the Agent prompt.
+Dispatch an independent plan-review helper with the `plan-review-model` from your session brief's Configuration section (default: sonnet).
+
+- **Claude Code:** use the `autoboard:plan-reviewer` agent directly.
+- **Codex:** spawn a read-only `worker` or `default` reviewer helper and tell it to read the reviewer rubric from `{Plugin directory}/agents/plan-reviewer.md` before beginning.
+
+Tell the reviewer the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`), the manifest path (`docs/autoboard/{slug}/manifest.md`), your task IDs, and the standards file path. Include in your prompt: "You MUST read the plan file and manifest with the Read tool before beginning your review." Do NOT paste the plan or task context into the reviewer prompt.
 
 **For standard tier**, add to your dispatch prompt: "Single-round review. APPROVE or return BLOCKING issues only. No NITs, no suggestions."
 
@@ -235,7 +245,12 @@ Invoke `/autoboard:verification-light` via the Skill tool to load the verificati
 
 **MANDATORY FIRST ACTION:** Invoke `/autoboard:receiving-review` via the Skill tool BEFORE dispatching the reviewer or evaluating any feedback. Do NOT skip this - the skill contains the authoritative decision tree for evaluating findings. Any evaluation performed without loading this skill first is invalid. **After it loads**, immediately dispatch the code reviewer below - do not stop here.
 
-Dispatch the `autoboard:code-reviewer` agent via the Agent tool with the `code-review-model` from your session brief's Configuration section (default: sonnet). Tell it the feature branch name so it can run `git diff` itself, and tell it the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`). Pass the standards file path. Include in your prompt: "You MUST read the plan file with the Read tool before beginning your review." Do NOT paste the diff or plan into the Agent prompt.
+Dispatch an independent code-review helper with the `code-review-model` from your session brief's Configuration section (default: sonnet).
+
+- **Claude Code:** use the `autoboard:code-reviewer` agent directly.
+- **Codex:** spawn a read-only `worker` or `default` reviewer helper and tell it to read the reviewer rubric from `{Plugin directory}/agents/code-reviewer.md` before beginning.
+
+Tell the reviewer the feature branch name so it can run `git diff` itself, and tell it the plan file path (`/tmp/autoboard-{slug}-s{N}-plan.md`). Pass the standards file path. Include in your prompt: "You MUST read the plan file with the Read tool before beginning your review." Do NOT paste the diff or plan into the reviewer prompt.
 
 **For standard tier**, add to your dispatch prompt: "Single-round review. APPROVE or return BLOCKING issues only. No NITs, no suggestions."
 

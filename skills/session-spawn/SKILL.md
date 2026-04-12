@@ -5,7 +5,7 @@ description: Create worktrees, build session briefs, and spawn session agents fo
 
 # Session Spawn
 
-For each session in the current layer, create a worktree, build a session brief, and spawn the agent via `bin/spawn-session.sh`.
+For each session in the current layer, create a worktree, build a session brief, and spawn the agent via the current provider's isolated session launcher.
 
 ---
 
@@ -46,7 +46,7 @@ mkdir -p /tmp/autoboard-{slug}-progress
 
 ## Resolve Session Permissions
 
-Determine the permissions file path. These permissions apply only to **spawned session agents**, not the orchestrator or your main Claude Code agent. Sessions run in `dontAsk` mode (auto-deny unlisted tools — no hanging on permission prompts in headless mode):
+Determine the permissions file path. These permissions apply only to **spawned session agents**, not the orchestrator or your main Claude Code agent. Claude sessions run in `dontAsk` mode (auto-deny unlisted tools — no hanging on permission prompts in headless mode). Codex sessions currently use the nearest documented non-interactive sandbox mode instead of translating this file one-for-one:
 
 ```bash
 PERM_FILE="docs/autoboard/{slug}/session-permissions.json"
@@ -58,6 +58,8 @@ fi
 Read `$PLUGIN_DIR` from the temp file written by setup:
 ```bash
 PLUGIN_DIR="$(cat /tmp/autoboard-plugin-dir)"
+SESSION_SPAWN_SCRIPT="$(cat /tmp/autoboard-session-spawn-script)"
+AUTOBOARD_PROVIDER="$(cat /tmp/autoboard-provider)"
 ```
 
 Store `$PERM_FILE` -- you'll pass it to the spawn script via `--settings` when launching sessions.
@@ -80,11 +82,14 @@ Do NOT write any code or make any changes before invoking this skill.
 ## Session Brief
 
 Session: S{N} — {focus}
+Provider: {value of /tmp/autoboard-provider}
 Feature branch: {branch}
 Session branch: autoboard/{slug}-s{N}
 Project directory: docs/autoboard/{slug}/
 Worktree path: /tmp/autoboard-{slug}-s{N}
 Progress directory: /tmp/autoboard-{slug}-progress/
+Plugin directory: {value of /tmp/autoboard-plugin-dir}
+Codex repo-local skills: {worktree path}/.agents/skills
 
 ## Workflow Tier: {tier from sessions table}
 
@@ -150,8 +155,7 @@ Before committing, run `git diff {feature-branch}...HEAD` and verify each item b
 The session workflow will tell you when to use each of these:
 - /autoboard:verification-light — verification protocol
 - /autoboard:receiving-review — critical thinking protocol for processing review feedback
-- autoboard:plan-reviewer agent — plan review (model: plan-review-model above)
-- autoboard:code-reviewer agent — code review (model: code-review-model above)
+- Reviewer rubrics: `{plugin-dir}/agents/plan-reviewer.md` and `{plugin-dir}/agents/code-reviewer.md`
 ```
 
 ### Tracking Section
@@ -177,7 +181,7 @@ Do NOT redo completed tasks. Continue from the first incomplete task.
 Spawn all sessions in the layer as **parallel background Bash commands** in a single message:
 
 ```bash
-"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-s{N}-brief.md \
+"$SESSION_SPAWN_SCRIPT" /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
   --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \
@@ -189,11 +193,11 @@ Spawn all sessions in the layer as **parallel background Bash commands** in a si
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
-**Effort level:** Read the `Effort` column from the sessions table in the manifest and pass `--effort {level}` to the spawn script. The shell script handles the mapping — `medium` is the default and gets omitted from the `claude` invocation.
+**Effort level:** Read the `Effort` column from the sessions table in the manifest and pass `--effort {level}` to the spawn script. The shell script handles the provider-specific mapping. `medium` uses the provider default.
 
 If the manifest has `skip-permissions: true`, use `--skip-permissions` instead of `--settings`:
 ```bash
-"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-s{N}-brief.md \
+"$SESSION_SPAWN_SCRIPT" /tmp/autoboard-{slug}-s{N}-brief.md \
   --model {model from frontmatter} \
   --effort {effort from sessions table} \
   --cwd /tmp/autoboard-{slug}-s{N} \
@@ -205,11 +209,11 @@ If the manifest has `skip-permissions: true`, use `--skip-permissions` instead o
   > /tmp/autoboard-{slug}-s{N}-output.jsonl 2>&1
 ```
 
-Run each with Bash `run_in_background: true`. The shell wrapper (`bin/spawn-session.sh`) handles `--plugin-dir`, model ID mapping, effort level mapping, `--output-format stream-json`, mechanical injection of standards/test-baseline/knowledge/codesight files into the prompt, and passes `--permission-mode dontAsk --settings <file>` to `claude` for scoped permissions.
+Run each with Bash `run_in_background: true`. The selected shell wrapper handles provider-specific model/effort mapping, machine-readable output, and mechanical injection of standards/test-baseline/knowledge/codesight files into the prompt. The Claude launcher applies the permissions file directly. The Codex launcher uses the nearest documented non-interactive mode and may ignore `--settings` until Codex exposes an equivalent per-command permission manifest.
 
 **Do NOT paste standards, test-baseline, knowledge, or codesight content into the brief.** The shell script appends these files mechanically via `--standards`, `--test-baseline`, `--knowledge`, and `--codesight` flags. If the files don't exist, the script silently skips them.
 
-Each session runs as a `claude -p` subprocess — a **full main agent** with complete tool access, including the Agent tool. This means sessions CAN spawn Explore subagents (haiku), plan-reviewer, and code-reviewer subagents.
+Each session runs as an isolated headless worker — a **full main agent** with complete tool access. That means sessions CAN spawn exploration helpers plus plan/code reviewers inside their own context instead of polluting the orchestrator.
 
 ### PID File
 

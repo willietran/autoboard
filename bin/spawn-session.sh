@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Thin wrapper around claude -p for spawning autoboard session agents.
+# Claude launcher for spawning autoboard session agents.
 # Sessions run with scoped permissions (dontAsk mode + allow/deny rules)
 # unless --skip-permissions is passed (falls back to --dangerously-skip-permissions).
 #
