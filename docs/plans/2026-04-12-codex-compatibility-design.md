@@ -84,6 +84,8 @@ The launcher layer should support:
 
 The Claude path stays as-is. The Codex path mirrors it closely enough that the higher-level skills do not need a behavioral rewrite.
 
+Provider selection should happen at worker launch time, not once per project run. The current orchestrator knows which platform it is running on from its own runtime context, so it should choose the matching wrapper explicitly whenever it spawns a new worker. Shell wrappers should not try to infer the provider from ambient environment variables.
+
 ### Skill-level provider awareness
 
 Keep skills as the control plane. Update only the instructions that currently hardcode Claude-specific assumptions.
@@ -93,6 +95,8 @@ Examples:
 - "spawn `claude -p`" becomes "spawn the configured provider's isolated worker"
 - session workflow wording stops assuming Claude by name
 - user-facing docs describe Claude and Codex compatibility without changing the workflow
+
+This also means resumed runs can legitimately mix providers over time. A run that started on Claude may later resume on Codex, and any newly spawned workers should use the provider of the current orchestrator invocation.
 
 ### No major change to QA/coherence model
 
@@ -128,6 +132,8 @@ Primary compatibility touchpoints:
 ### Codex headless CLI differences
 
 Codex may differ from Claude in flag shape, permission handling, output streaming, or model identifiers. The implementation should isolate those differences to the launcher and the few skill instructions that mention them.
+
+Automatic provider detection from shell environment is not a reliable foundation. The orchestrator should pass provider choice explicitly by selecting the correct launcher path rather than asking shell scripts to guess.
 
 ### Packaging and metadata expectations
 

@@ -69,6 +69,8 @@ set -euo pipefail
 # Record PID/start time and clean up the full process group on exit
 ```
 
+The orchestrator should select this wrapper explicitly when it is running on Codex. Do not make the wrapper auto-detect whether the parent platform is Codex or Claude.
+
 **Step 4: Narrow the Claude wrapper wording**
 
 Keep `bin/spawn-session.sh` behavior intact, but update comments and usage text so it is clearly the Claude launcher rather than the only launcher.
@@ -110,6 +112,8 @@ Sessions run non-interactively in a headless worker.
 
 Retain the same workflow, gates, and artifact conventions.
 
+Add one explicit rule to the instructions: provider is resolved by the current orchestrator invocation at spawn time, so resumed runs may launch new workers with a different provider than earlier workers.
+
 **Step 3: Keep session behavior unchanged**
 
 Ensure the skills still require:
@@ -150,6 +154,8 @@ Expected: Claude-coupled references are present
 **Step 2: Update fixer spawn instructions**
 
 Replace hardcoded assumptions with provider-aware launcher language, while keeping the same fixer loop and worktree behavior.
+
+Keep provider selection launch-time and explicit. Fixer skills should invoke the correct wrapper chosen by the current orchestrator, not rely on shell-side provider guessing.
 
 **Step 3: Update verification wording carefully**
 
@@ -217,6 +223,7 @@ Document the required validation cases:
 2. Codex isolated session launches from the same brief shape
 3. Session workflow remains non-interactive
 4. Orchestrator-facing behavior is unchanged
+5. New workers use the current orchestrator's provider on each spawn
 ```
 
 **Step 2: Run structural verification**
