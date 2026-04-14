@@ -5,7 +5,7 @@ description: Run QA gate validation at a layer boundary. Spawns QA subagent, val
 
 # QA Gate
 
-Run acceptance testing and regression checks at a layer boundary. The orchestrator spawns a QA subagent (Agent tool), then exercises its most critical judgment: validating the QA agent's claims before routing the result.
+Run acceptance testing and regression checks at a layer boundary. The orchestrator spawns a QA helper, then exercises its most critical judgment: validating the QA agent's claims before routing the result.
 
 **Prerequisites:**
 - A COHERENCE-REPORT must exist for this layer (from the coherence-audit skill). If you do not have one, STOP and run the coherence audit first. The QA brief requires the COHERENCE-REPORT.
@@ -31,7 +31,7 @@ If the setup command fails, diagnose and fix before spawning the QA agent. A QA 
 
 ## Spawn QA Subagent
 
-**QA Prompt Integrity:** The Agent prompt below is a FIXED TEMPLATE. Fill in the `{placeholder}` fields with data from the manifest, config, and prior steps. Do NOT:
+**QA Prompt Integrity:** The QA helper prompt below is a FIXED TEMPLATE. Fill in the `{placeholder}` fields with data from the manifest, config, and prior steps. Do NOT:
 - Add skip instructions beyond what's in the manifest's `expected-skips` list
 - Tell the QA agent that features "can't be tested" or "require infrastructure that isn't available"
 - Preemptively excuse failures before the QA agent has attempted them
@@ -39,103 +39,99 @@ If the setup command fails, diagnose and fix before spawning the QA agent. A QA 
 
 The `expected-skips` placeholder is the ONLY place skip information enters the prompt, and it comes verbatim from the manifest — not from your judgment. If you believe a criterion can't be tested, let the QA agent discover that. Your job is to validate its claims afterward (fabrication detection), not to preempt them.
 
-Spawn a QA subagent via the **Agent tool** (NOT `claude -p`) — this keeps browser screenshots and verbose output out of the orchestrator's context window:
+Spawn a QA helper via your provider's subagent mechanism (NOT an isolated session worker) — this keeps browser screenshots and verbose output out of the orchestrator's context window. Use model `qa-model` from the manifest. The message body should be:
 
 ```
-Agent(
-  prompt: "You are a QA validator for the autoboard project.
+You are a QA validator for the autoboard project.
 
-  Your FIRST action: invoke /autoboard:verification --full via the Skill tool.
+Your FIRST action: invoke /autoboard:verification --full via the Skill tool.
 
-  Configuration for the verification skill:
-  - qa-mode: {qa-mode from frontmatter — 'full' or 'build-only'}
-  - Verify command: {verify command from frontmatter}
-  - Dev server: {dev-server command from frontmatter, or 'not configured'}
-  - Setup: {setup command from frontmatter, or 'skip — no setup command configured'}
-  - QA setup: {qa-setup command from frontmatter, or 'skip — no qa-setup configured'}
-  - Auth strategy: {auth-strategy from frontmatter, default: none}
-  - Test credentials: {test-credentials from frontmatter, or 'none — no auth configured'}
-  - Auth notes: {auth-notes from frontmatter, or omit if empty}
+Configuration for the verification skill:
+- qa-mode: {qa-mode from frontmatter — 'full' or 'build-only'}
+- Verify command: {verify command from frontmatter}
+- Dev server: {dev-server command from frontmatter, or 'not configured'}
+- Setup: {setup command from frontmatter, or 'skip — no setup command configured'}
+- QA setup: {qa-setup command from frontmatter, or 'skip — no qa-setup configured'}
+- Auth strategy: {auth-strategy from frontmatter, default: none}
+- Test credentials: {test-credentials from frontmatter, or 'none — no auth configured'}
+- Auth notes: {auth-notes from frontmatter, or omit if empty}
 
-  If test credentials are provided, use them to log in when acceptance criteria
-  require authenticated access. If login fails, report as criterion FAIL with
-  the specific error (not infrastructure failure, unless the dev server itself is down).
+If test credentials are provided, use them to log in when acceptance criteria
+require authenticated access. If login fails, report as criterion FAIL with
+the specific error (not infrastructure failure, unless the dev server itself is down).
 
-  - Design doc: {path to design doc, e.g. docs/autoboard/{slug}/design.md}
-  - Test baseline file: {absolute path to docs/autoboard/{slug}/test-baseline.md}
-    Read this file with the Read tool. If the file does not exist, there is no baseline.
+- Design doc: {path to design doc, e.g. docs/autoboard/{slug}/design.md}
+- Test baseline file: {absolute path to docs/autoboard/{slug}/test-baseline.md}
+  Read this file with the Read tool. If the file does not exist, there is no baseline.
 
-  Acceptance criteria for this QA gate:
-  {paste the acceptance criteria from the manifest's QA gate marker}
+Acceptance criteria for this QA gate:
+{paste the acceptance criteria from the manifest's QA gate marker}
 
-  Expected skips (user-acknowledged features that won't be tested):
-  {paste the expected-skips section from the manifest, or 'none'}
+Expected skips (user-acknowledged features that won't be tested):
+{paste the expected-skips section from the manifest, or 'none'}
 
-  Coherence audit results: {absolute path to docs/autoboard/{slug}/sessions/coherence-L{N}.md}
-  Read this file for the COHERENCE-REPORT. Any BLOCKING items should already be fixed by the coherence fixer.
-  If you encounter issues matching unresolved BLOCKING items, escalate as FAIL.
+Coherence audit results: {absolute path to docs/autoboard/{slug}/sessions/coherence-L{N}.md}
+Read this file for the COHERENCE-REPORT. Any BLOCKING items should already be fixed by the coherence fixer.
+If you encounter issues matching unresolved BLOCKING items, escalate as FAIL.
 
-  Critical user flows and test scenarios -- you MUST read these files with the Read tool before testing:
-  - Design doc: {absolute path to design.md} -- read the ## Critical User Flows section
-  - Manifest: {absolute path to manifest.md} -- read Key test scenarios from browser-marked tasks
-  These tell you WHAT to test -- not just happy paths but error paths and edge cases.
+Critical user flows and test scenarios -- you MUST read these files with the Read tool before testing:
+- Design doc: {absolute path to design.md} -- read the ## Critical User Flows section
+- Manifest: {absolute path to manifest.md} -- read Key test scenarios from browser-marked tasks
+These tell you WHAT to test -- not just happy paths but error paths and edge cases.
 
-  The verification skill will run build/test commands and, if qa-mode is full,
-  start the dev server and run browser smoke tests in two phases:
-  1. Acceptance testing — verify each criterion above via browser interaction.
-     For each criterion, test the happy path AND at least one error/edge case
-     from the critical user flows and key test scenarios above.
-  2. Regression testing — use the design doc to test existing features from prior layers
+The verification skill will run build/test commands and, if qa-mode is full,
+start the dev server and run browser smoke tests in two phases:
+1. Acceptance testing — verify each criterion above via browser interaction.
+   For each criterion, test the happy path AND at least one error/edge case
+   from the critical user flows and key test scenarios above.
+2. Regression testing — use the design doc to test existing features from prior layers
 
-  Your FINAL output must end with a fenced block labeled QA-REPORT that the
-  orchestrator will post verbatim as a GitHub issue comment. Use this structure:
+Your FINAL output must end with a fenced block labeled QA-REPORT that the
+orchestrator will post verbatim as a GitHub issue comment. Use this structure:
 
-  ~~~QA-REPORT
-  ## QA Gate: {description}
+~~~QA-REPORT
+## QA Gate: {description}
 
-  **Result: {PASS | FAIL}**
+**Result: {PASS | FAIL}**
 
-  ### Build & Tests
-  | Step | Result | Details |
-  |------|--------|---------|
-  | Lint | {PASS/FAIL/SKIPPED} | {e.g. eslint exit 0; or 'no linter configured'} |
-  | Type check | {PASS/FAIL} | {e.g. tsc exit 0, 0 errors} |
-  | Build | {PASS/FAIL} | {e.g. next build exit 0} |
-  | Tests | {PASS/FAIL} | {e.g. 309/309 pass} |
+### Build & Tests
+| Step | Result | Details |
+|------|--------|---------|
+| Lint | {PASS/FAIL/SKIPPED} | {e.g. eslint exit 0; or 'no linter configured'} |
+| Type check | {PASS/FAIL} | {e.g. tsc exit 0, 0 errors} |
+| Build | {PASS/FAIL} | {e.g. next build exit 0} |
+| Tests | {PASS/FAIL} | {e.g. 309/309 pass} |
 
-  ### Browser Testing
-  {Omit this section entirely if qa-mode is build-only}
-  **Dev server:** {healthy at URL | FAIL — reason}
-  **Browser tool:** {tool name | FAIL — none detected}
+### Browser Testing
+{Omit this section entirely if qa-mode is build-only}
+**Dev server:** {healthy at URL | FAIL — reason}
+**Browser tool:** {tool name | FAIL — none detected}
 
-  #### Acceptance Criteria
-  | # | Criterion | Result | Evidence |
-  |---|-----------|--------|----------|
-  | 1 | {criterion text} | {PASS/FAIL/EXPECTED SKIP} | {screenshot ref, error msg, or skip reason} |
+#### Acceptance Criteria
+| # | Criterion | Result | Evidence |
+|---|-----------|--------|----------|
+| 1 | {criterion text} | {PASS/FAIL/EXPECTED SKIP} | {screenshot ref, error msg, or skip reason} |
 
-  #### Regression Tests
-  | Feature | Result | Notes |
-  |---------|--------|-------|
-  | {feature} | {PASS/FAIL/EXPECTED SKIP} | {details} |
+#### Regression Tests
+| Feature | Result | Notes |
+|---------|--------|-------|
+| {feature} | {PASS/FAIL/EXPECTED SKIP} | {details} |
 
-  ### Coverage Summary
-  - **Passed:** {N}
-  - **Failed:** {N}
-  - **Expected skips:** {N} (user-acknowledged)
-  ~~~
+### Coverage Summary
+- **Passed:** {N}
+- **Failed:** {N}
+- **Expected skips:** {N} (user-acknowledged)
+~~~
 
-  Rules for the QA-REPORT block:
-  - A QA gate has exactly TWO outcomes: PASS or FAIL. No third option.
-  - Every acceptance criterion must appear — never omit criteria
-  - Valid statuses per criterion: PASS, FAIL, or EXPECTED SKIP
-  - EXPECTED SKIP is ONLY for criteria matching the expected-skips list — user pre-approved these
-  - Any criterion that should have been tested but wasn't is FAIL, not SKIPPED
-  - If qa-mode is full and browser testing can't run (no tool, dev server down), the result is FAIL — this is an infrastructure error
-  - If qa-mode is build-only, omit the Browser Testing section entirely — acceptance criteria are verified via test output only
-  - The Coverage Summary counts must be accurate",
-
-  model: <qa-model from frontmatter>
-)
+Rules for the QA-REPORT block:
+- A QA gate has exactly TWO outcomes: PASS or FAIL. No third option.
+- Every acceptance criterion must appear — never omit criteria
+- Valid statuses per criterion: PASS, FAIL, or EXPECTED SKIP
+- EXPECTED SKIP is ONLY for criteria matching the expected-skips list — user pre-approved these
+- Any criterion that should have been tested but wasn't is FAIL, not SKIPPED
+- If qa-mode is full and browser testing can't run (no tool, dev server down), the result is FAIL — this is an infrastructure error
+- If qa-mode is build-only, omit the Browser Testing section entirely — acceptance criteria are verified via test output only
+- The Coverage Summary counts must be accurate
 ```
 
 ---
@@ -166,7 +162,7 @@ If tracking is active: `close-ticket(qa-gate, "{QA-REPORT contents}")`, `move-ti
 
 ### Step 1 — Dispatch QA Validator
 
-Dispatch the `autoboard:qa-validator` agent via the Agent tool with model `qa-model` and these inputs:
+Dispatch the QA validator via your provider's subagent mechanism with model `qa-model` and these inputs. On Claude Code, use the `autoboard:qa-validator` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-{slug}-plugin-dir)/agents/qa-validator.md` before validating:
 
 - QA-REPORT text (the full `~~~QA-REPORT` block)
 - Expected skips (from manifest's `expected-skips` list)

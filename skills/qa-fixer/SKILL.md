@@ -80,18 +80,21 @@ Write the fixer's brief to `/tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-
 ```
 You are a autoboard session agent.
 
-Your FIRST action must be to invoke /autoboard:session-workflow via the Skill tool.
-This loads your full workflow and shell safety guidelines.
-Do NOT write any code or make any changes before invoking this skill.
+Your FIRST action depends on your provider:
+- If Provider is `claude`: invoke `/autoboard:session-workflow` via the Skill tool.
+- If Provider is `codex`: read `{plugin-dir}/skills/session-workflow/SKILL.md` with the Read tool and follow it exactly.
+Do NOT write any code or make any changes before loading that workflow.
 
 ## Session Brief
 
 Session: QA Fix -- Layer {N}, Round {round}, Group {group}
+Provider: {value of /tmp/autoboard-{slug}-provider}
 Feature branch: autoboard/{slug}
 Session branch: autoboard/{slug}-qa-fix-L{N}-r{round}-g{group}
 Project directory: docs/autoboard/{slug}/
 Worktree path: /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}
 Progress directory: /tmp/autoboard-{slug}-progress/
+Plugin directory: {value of /tmp/autoboard-{slug}-plugin-dir}
 
 [QA FIX] QA gate failed after Layer {N}.
 
@@ -147,7 +150,9 @@ Do NOT rewrite working code. Only fix what your assignment identifies.
 Before attempting ANY fix, you MUST:
 1. Reproduce the exact failing criterion -- if QA failed in browser, reproduce in browser.
    Use the dev server and browser tool from your Configuration section.
-2. Invoke /autoboard:diagnose via the Skill tool to trace root cause.
+2. Load the diagnose skill to trace root cause.
+   - **Claude Code:** invoke `/autoboard:diagnose` via the Skill tool.
+   - **Codex:** read `{plugin-dir}/skills/diagnose/SKILL.md`.
    This loads a structured four-phase methodology: Reproduce -> Trace -> Hypothesize -> Fix.
    Follow it completely -- no shortcuts.
 3. Only after root cause is identified, plan and implement the fix.
@@ -178,11 +183,9 @@ If the root cause requires a significant refactor, do the refactor.
 ## Available Skills and Agents
 
 The session workflow will tell you when to use each of these:
-- /autoboard:diagnose -- mandatory before attempting fixes (root cause investigation)
-- /autoboard:verification-light -- verification protocol
-- /autoboard:receiving-review -- critical thinking protocol for processing review feedback
-- autoboard:plan-reviewer agent -- plan review (model: plan-review-model above)
-- autoboard:code-reviewer agent -- code review (model: code-review-model above)
+- Claude skill entrypoints: `/autoboard:diagnose`, `/autoboard:verification-light`, `/autoboard:receiving-review`
+- Codex skill files: `{plugin-dir}/skills/diagnose/SKILL.md`, `{plugin-dir}/skills/verification-light/SKILL.md`, `{plugin-dir}/skills/receiving-review/SKILL.md`
+- Reviewer rubrics: `{plugin-dir}/agents/plan-reviewer.md` and `{plugin-dir}/agents/code-reviewer.md`
 ```
 
 #### Tracking Section
@@ -198,10 +201,11 @@ If tracking is disabled, omit the Tracking section entirely.
 Spawn this fixer as a **background Bash command**:
 
 ```bash
-"$(cat /tmp/autoboard-plugin-dir)/bin/spawn-session.sh" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md \
+"$(cat /tmp/autoboard-{slug}-session-spawn-script)" /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group}-brief.md \
   --model {model from frontmatter} \
   --effort {effort of the session that produced the failing code} \
   --cwd /tmp/autoboard-{slug}-qa-fix-L{N}-r{round}-g{group} \
+  --plugin-dir "$(cat /tmp/autoboard-{slug}-plugin-dir)" \
   --settings "$PERM_FILE" \
   --standards "docs/autoboard/{slug}/standards.md" \
   --test-baseline "docs/autoboard/{slug}/test-baseline.md" \

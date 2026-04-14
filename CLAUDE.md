@@ -2,9 +2,9 @@
 
 An AI engineering lead that manages a team of coding AIs so they don't cut corners.
 
-Autoboard is a Claude Code plugin that decomposes features into parallel coding sessions, each with mandatory review gates, then validates the integrated result with cross-session quality audits — catching the problems that no individual session could see. The orchestrator exercises judgment: it arbitrates review disputes, curates cross-session knowledge, validates QA claims, and diagnoses failures before deciding how to respond.
+Autoboard is a Claude Code and Codex plugin that decomposes features into parallel coding sessions, each with mandatory review gates, then validates the integrated result with cross-session quality audits — catching the problems that no individual session could see. The orchestrator exercises judgment: it arbitrates review disputes, curates cross-session knowledge, validates QA claims, and diagnoses failures before deciding how to respond.
 
-**Architecture:** Skills-only plugin with a thin shell wrapper (`bin/spawn-session.sh`). The Main Agent (Claude Code) is the orchestrator — the engineering lead. It reads a manifest, spawns session agents via `claude -p` subprocesses, merges results, and runs QA gates. Sessions are full main agents with complete tool access, so they can spawn Explore subagents, plan reviewers, and code reviewers.
+**Architecture:** Skills-only plugin with provider-specific packaging (`.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`) and thin provider-specific launchers (`bin/spawn-session.sh` for Claude Code, `bin/spawn-codex-session.sh` for Codex). The Main Agent is the orchestrator — the engineering lead. It reads a manifest, spawns session agents through the current provider's headless worker path, merges results, and runs QA gates. Sessions are full main agents with complete tool access, so they can spawn Explore subagents, plan reviewers, and code reviewers.
 
 ## How It Works
 
@@ -39,7 +39,9 @@ Changes to the repo are instantly reflected — no copying needed.
 Conventions — don't enumerate every file, just know where to look:
 
 - **`.claude-plugin/plugin.json`** — Plugin manifest
-- **`bin/spawn-session.sh`** — Thin wrapper around `claude -p` for spawning session agents
+- **`.codex-plugin/plugin.json`** — Codex plugin manifest
+- **`bin/spawn-session.sh`** — Claude launcher for spawning isolated session agents
+- **`bin/spawn-codex-session.sh`** — Codex launcher for spawning isolated session agents
 - **`config/default-session-permissions.json`** — Default allow/deny rules for session agents
 - **`standards/dimensions/<name>.md`** — One file per quality dimension (see `standards/README.md`)
 - **`skills/<name>/SKILL.md`** — Each skill lives in its own directory
@@ -69,12 +71,12 @@ Conventions — don't enumerate every file, just know where to look:
 
 ## Architecture
 
-**Main Agent = Orchestrator.** It reads a manifest, spawns session agents via `claude -p`, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use `claude -p` (not the Agent tool) because session agents need to spawn their own subagents — a platform constraint.
+**Main Agent = Orchestrator.** It reads a manifest, spawns session agents through the current provider's headless worker path, merges their work, runs QA gates, and reports progress. It does NOT implement code itself. Sessions use the provider's isolated headless worker path instead of orchestrator-owned subagents because session agents need to spawn their own helpers without polluting the main context.
 
 | Orchestrator does | Session Agent does |
 |---|---|
 | Parse manifest, build dependency graph | Explore codebase, plan implementation |
-| Create worktrees, spawn `claude -p` sessions | Execute tasks (TDD, implementation, tests) |
+| Create worktrees, spawn isolated sessions | Execute tasks (TDD, implementation, tests) |
 | Merge session branches to feature branch | Spawn plan-reviewer and code-reviewer subagents |
 | Run QA gates between layers | Run build verification within worktree |
 | Handle failures (retry once, then ask user) | Diagnose and fix issues within session scope |
@@ -105,13 +107,13 @@ QA gates run between dependency layers to catch compound errors. The orchestrato
 Two review gates are BLOCKING PREREQUISITES in every session. Skipping either is a non-negotiable violation.
 
 **Gate 1 — Plan Review (before implementation):**
-- Dispatch the `autoboard:plan-reviewer` agent
+- Dispatch an independent plan-review helper through the current provider
 - Critically evaluate feedback — do NOT blindly agree
 - Update the plan with accepted changes before writing any code
 - **NEVER start implementation without completing this gate**
 
 **Gate 2 — Code Review (before final commit):**
-- Dispatch the `autoboard:code-reviewer` agent
+- Dispatch an independent code-review helper through the current provider
 - Critically evaluate feedback — verify each suggestion technically
 - Implement fixes, re-run verification
 - **NEVER finalize a commit without completing this gate**
@@ -131,11 +133,11 @@ Two review gates are BLOCKING PREREQUISITES in every session. Skipping either is
 - **No shell injection.** All subprocess calls must use argument arrays — never string interpolation into shell commands.
 - **Validate manifest input.** Task fields parsed from markdown are untrusted. Sanitize file paths, task IDs, and branch names.
 - **Preserve session branches on failure.** Never delete a session branch until its work is successfully merged.
-- **Scoped session permissions.** Sessions run in `dontAsk` mode with project-specific allow/deny rules. Generated by `/autoboard:task-manifest` at `docs/autoboard/{slug}/session-permissions.json`. Fallback: `config/default-session-permissions.json`. Opt out: `skip-permissions: true` in manifest.
+- **Scoped session permissions.** Claude sessions run in `dontAsk` mode with project-specific allow/deny rules. Generated by `/autoboard:task-manifest` at `docs/autoboard/{slug}/session-permissions.json`. Fallback: `config/default-session-permissions.json`. Codex does not support this manifest-based settings path yet, so Codex runs currently require `skip-permissions: true` in the manifest.
 
-### Claude Code Friendliness
+### Agent Friendliness
 
-The codebase must be easily navigable by Claude Code.
+The codebase must be easily navigable by Claude Code and Codex.
 
 - **Zero dead code.** No commented-out blocks, no unused functions, no orphaned imports.
 - **Predictable naming.** Files, functions, and variables named so their purpose is obvious.

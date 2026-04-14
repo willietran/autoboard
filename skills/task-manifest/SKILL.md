@@ -40,7 +40,7 @@ qa-setup: npm run seed:test-data  # Commands to prepare environment for browser 
 env-template: .env.example     # Path to env template file (optional, omit if not needed)
 retries: 1                     # Max automatic retries per session
 tracking-provider: none         # Set to 'github' for GitHub Projects V2 live tracking
-skip-permissions: false        # Set true to use --dangerously-skip-permissions (default: false)
+skip-permissions: false        # Required for Codex runs until session-permissions.json is supported there (default: false)
 qa-mode: build-only            # build-only (default) or full (browser + build/test)
 ---
 ```
@@ -139,7 +139,7 @@ Each task runs in an **isolated git worktree** that only contains code merged fr
 
 When the tech stack includes a managed backend (Convex, Supabase, PlanetScale, Firebase, etc.), the scaffold session MUST include a task that provisions it — not just creates config files.
 
-**Critical: session agents run non-interactively (`claude -p`).** They cannot answer prompts, select from menus, or interact with dashboards. All CLI commands in task requirements MUST use non-interactive flags. If a CLI blocks waiting for input, the session hangs forever.
+**Critical: session agents run non-interactively in isolated headless workers.** They cannot answer prompts, select from menus, or interact with dashboards. All CLI commands in task requirements MUST use non-interactive flags. If a CLI blocks waiting for input, the session hangs forever.
 
 **Two-phase provisioning:**
 
@@ -393,7 +393,7 @@ The manifest must include:
 
 ### Session Permissions
 
-Generate `docs/autoboard/{slug}/session-permissions.json` alongside the manifest. This file controls what tools **spawned session agents** can use — it does NOT affect your main Claude Code agent or the orchestrator. Sessions run in `dontAsk` mode, so unlisted tools are auto-denied (no hanging on permission prompts).
+Generate `docs/autoboard/{slug}/session-permissions.json` alongside the manifest. This file controls what tools **spawned Claude session agents** can use — it does NOT affect your main agent or the orchestrator. Claude sessions run in `dontAsk` mode, so unlisted tools are auto-denied (no hanging on permission prompts). Codex does not support this manifest-based session settings path yet, so Codex runs currently require `skip-permissions: true`. Keep generating the file so Claude remains fully supported and future Codex mappings have a stable source of truth.
 
 **Generation logic:**
 
@@ -444,7 +444,7 @@ Rules:
 ## Architect Review Loop
 
 After generating the manifest:
-1. Dispatch the `autoboard:plan-reviewer` agent via the Agent tool (max 3 rounds). Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
+1. Dispatch the plan-review helper via your provider's subagent mechanism (max 3 rounds). On Claude Code, use the `autoboard:plan-reviewer` agent directly. On Codex, spawn a reviewer helper and tell it to read the plugin's `agents/plan-reviewer.md` rubric before reviewing. Include the manifest content and design doc path in the prompt, and instruct the reviewer to focus on these manifest-specific criteria:
    - **QA acceptance criteria thoroughness** — do criteria test complete flows (signup -> redirect -> dashboard), not isolated actions ("user can sign up")? Do they include negative cases for security-critical flows? Does every user-facing feature from the design doc have at least one criterion?
    - **Dependency correctness** — apply the worktree test to every task. Would this task's agent succeed in a worktree containing only the repo's current main branch plus its completed dependencies? Are implicit dependencies captured (shared types, config, toolchains)?
    - **Session sizing** — are complexity caps respected (raw Fibonacci sum <= 8, max 4 tasks, max 1 task with complexity >= 5, max 3 TDD tasks)? Is session effort correctly derived from the max individual task complexity (1->low, 2/3->medium, 5->high, 8->max) with no TDD adjustment? Does the complexity distribution pass the 40% check (no more than 40% of tasks at 5+)?

@@ -13,7 +13,7 @@ Synthesize what this layer built and brief the next layer with what they need to
 
 ## Dispatch Knowledge Curator
 
-Dispatch the `autoboard:knowledge-curator` agent via the Agent tool with model `explore-model` and these inputs:
+Dispatch the knowledge curator via your provider's subagent mechanism with model `explore-model` and these inputs. On Claude Code, use the `autoboard:knowledge-curator` agent directly. On Codex, spawn a read-only helper and tell it to read `$(cat /tmp/autoboard-{slug}-plugin-dir)/agents/knowledge-curator.md` before beginning:
 
 - Session status file paths: `docs/autoboard/{slug}/sessions/s{N}-status.md` for each completed session in this layer
 - Prior layer knowledge path: `docs/autoboard/{slug}/sessions/layer-{N-1}-knowledge.md` (or note "first layer" if Layer 0)

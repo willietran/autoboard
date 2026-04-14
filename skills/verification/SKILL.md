@@ -257,7 +257,7 @@ Then read `.env.local` and provision empty variables. Do NOT just report a table
 
 4. After all vars are handled, **re-read `.env.local`** and confirm everything is set. List any that are still empty.
 
-Session agents run non-interactively (`claude -p`) — they cannot answer prompts. All provisioning that requires interaction must happen here in preflight. Do not defer it to session tasks.
+Session agents run non-interactively in isolated headless workers — they cannot answer prompts. All provisioning that requires interaction must happen here in preflight. Do not defer it to session tasks.
 
 **Convex provisioning** (when NEXT_PUBLIC_CONVEX_URL or CONVEX_DEPLOYMENT is empty):
 

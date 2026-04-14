@@ -2,7 +2,7 @@
 
 **Give it a feature. Walk away. Come back to code a senior engineer would approve.**
 
-Autoboard is a Claude Code plugin that runs your entire build autonomously. You describe what you want, the orchestrator breaks it into parallel coding sessions, and every session is independently reviewed, tested, and audited before anything merges. No babysitting. No reviewing every diff. No waking up to a mess.
+Autoboard is a Claude Code and Codex plugin that runs your entire build autonomously. You describe what you want, the orchestrator breaks it into parallel coding sessions, and every session is independently reviewed, tested, and audited before anything merges. No babysitting. No reviewing every diff. No waking up to a mess.
 
 It works because it applies the same principles Toyota used to revolutionize manufacturing: never let the builder inspect their own work, stop the line the moment something breaks, and never pass a defect downstream.
 
@@ -26,11 +26,17 @@ Add the marketplace and install:
 
 ### Development
 
-To work on autoboard itself, clone the repo and use the `--plugin-dir` flag:
+To work on autoboard itself, clone the repo and use the `--plugin-dir` flag. This is the local development route, not the distribution path:
 
 ```bash
 alias claude="claude --plugin-dir /path/to/autoboard"
 ```
+
+### Codex Packaging
+
+Autoboard is also packaged for Codex through `.codex-plugin/plugin.json`. The repository keeps the Claude and Codex packaging metadata side by side so the same workflow can be distributed through either runtime without changing the product behavior.
+
+Headless Codex workers receive the installed Autoboard plugin directory explicitly and read the required skill files by absolute path from that bundle. The runtime no longer depends on a worktree-local `.agents/skills` shim.
 
 
 ## How It Works
@@ -108,7 +114,7 @@ QA agents lie. They claim "infrastructure failure" when they can't figure out ho
 | Capability | GSD | Autoboard |
 |---|---|---|
 | Can you walk away? | No. ~15 commands to drive each phase | Yes. 3 commands, then autonomous |
-| Context management | Fresh 200k context per task | Fresh `claude -p` per session in isolated worktrees |
+| Context management | Fresh 200k context per task | Fresh headless worker per session in isolated worktrees |
 | Plan review | Plan-checker validation loop (up to 3 iterations) | Independent plan-reviewer subagent, max 3 adversarial rounds |
 | Code review | User acceptance testing | Independent code-reviewer subagent, mandatory before every commit |
 | TDD | Not enforced | Per-task TDD phases where marked in manifest |

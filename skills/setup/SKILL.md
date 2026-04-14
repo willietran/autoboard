@@ -11,7 +11,7 @@ description: Resolve project, parse manifest, run preflight checks, and display 
 
 ## Step 0: Resolve Plugin Directory
 
-Resolve the autoboard plugin directory and persist it for the entire run. All downstream skills (session-spawn, qa-fixer, coherence-fixer, failure) read from this file to find `bin/spawn-session.sh` and `config/`.
+Resolve the autoboard plugin directory and persist it for the current run. All downstream skills (session-spawn, qa-fixer, coherence-fixer, failure, audit) read from this temp file to find the launcher scripts, reviewer rubrics, installed skill bundle, and `config/`.
 
 ```bash
 # Resolve autoboard plugin directory
@@ -22,10 +22,11 @@ elif command -v mdfind >/dev/null 2>&1; then
 else
   AUTOBOARD_DIR="$(dirname "$(dirname "$(find "$HOME" -maxdepth 6 -name 'spawn-session.sh' -path '*/autoboard/bin/*' -type f 2>/dev/null | head -1)")")"
 fi
-echo "$AUTOBOARD_DIR" > /tmp/autoboard-plugin-dir
+echo "$AUTOBOARD_DIR" > "/tmp/autoboard-{slug}-plugin-dir"
 ```
 
-Verify: `[[ -f "$AUTOBOARD_DIR/bin/spawn-session.sh" ]] && echo "OK: $AUTOBOARD_DIR" || echo "FAIL: could not find autoboard plugin directory"`
+Verify:
+`[[ -f "$AUTOBOARD_DIR/bin/spawn-session.sh" && -f "$AUTOBOARD_DIR/bin/spawn-codex-session.sh" && -f "/tmp/autoboard-{slug}-plugin-dir" ]] && echo "OK: $AUTOBOARD_DIR" || echo "FAIL: could not resolve autoboard plugin directory or session launchers"`
 
 If verification fails, ask the user for the plugin directory path.
 
@@ -54,6 +55,25 @@ Check for required files:
 1. `manifest.md` exists — proceed to Step 2
 2. `design.md` exists but no `manifest.md` — tell the user to run `/autoboard:task-manifest <slug>` first
 3. Neither exists — tell the user to run `/autoboard:brainstorm` first
+
+Then resolve the current provider from **your runtime context** (do NOT ask the shell to infer this from environment variables):
+
+- If you are running inside **Codex**, set:
+  - `AUTOBOARD_PROVIDER="codex"`
+  - `SESSION_SPAWN_SCRIPT="$AUTOBOARD_DIR/bin/spawn-codex-session.sh"`
+- If you are running inside **Claude Code**, set:
+  - `AUTOBOARD_PROVIDER="claude"`
+  - `SESSION_SPAWN_SCRIPT="$AUTOBOARD_DIR/bin/spawn-session.sh"`
+
+Persist both using **slug-scoped temp files** so overlapping runs cannot clobber each other:
+
+```bash
+printf '%s\n' "$AUTOBOARD_PROVIDER" > "/tmp/autoboard-{slug}-provider"
+printf '%s\n' "$SESSION_SPAWN_SCRIPT" > "/tmp/autoboard-{slug}-session-spawn-script"
+```
+
+Verify:
+`[[ -f "$SESSION_SPAWN_SCRIPT" && -f "/tmp/autoboard-{slug}-provider" && -f "/tmp/autoboard-{slug}-session-spawn-script" ]] && echo "OK: $AUTOBOARD_DIR ($AUTOBOARD_PROVIDER)" || echo "FAIL: could not resolve autoboard runtime state"`
 
 ---
 
@@ -87,6 +107,17 @@ skip-permissions: false        # Skip session permission scoping (default: false
 ```
 
 For backward compatibility: `github-project: true` is treated as `tracking-provider: github`.
+
+If `AUTOBOARD_PROVIDER` is `codex` and `skip-permissions` is not `true`, stop here and tell the user:
+
+```text
+Codex runs currently require `skip-permissions: true` in manifest frontmatter.
+Claude-style `session-permissions.json` settings files are not supported by the Codex launcher yet.
+
+Options:
+1. Set `skip-permissions: true` and rerun on Codex
+2. Run this project on Claude Code for full manifest-based session permissions
+```
 
 ### Sessions
 
